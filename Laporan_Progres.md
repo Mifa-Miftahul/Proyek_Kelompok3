@@ -25,11 +25,21 @@
 
 ### Member
 
-1. Rizky Fadilah
+1. Rizky Fadilah (2488010040)
+
    Accept invitation
    ![alt text](image-2.png)
+   
    Clone project
    ![alt text](image-3.png)
+
+2. Salwa Ayudia Putri (2488010042)
+
+   Accept invitation
+   ![alt text](image-4.png)
+
+   Clone project
+   ![alt text](image-5.png)
 
 ### Diskusi Penentuan Project
 
