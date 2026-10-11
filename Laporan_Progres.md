@@ -23,6 +23,14 @@
 2. Clone project
 3. Konfirmasi Bukti
 
+### Member
+
+1. Rizky Fadilah
+   Accept invitation
+   ![alt text](image-2.png)
+   Clone project
+   ![alt text](image-3.png)
+
 ### Diskusi Penentuan Project
 
 Project yang Dipilih:
