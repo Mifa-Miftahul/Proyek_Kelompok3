@@ -41,6 +41,14 @@
    Clone project
    ![alt text](image-5.png)
 
+3. Najwa Ramadhan (2488010001)
+
+   Accept invitation
+   ![alt text](image-6.png)
+
+   Clone project
+   ![alt text](image-7.png)
+
 ### Diskusi Penentuan Project
 
 Project yang Dipilih:
