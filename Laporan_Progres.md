@@ -51,7 +51,9 @@
 
 ### Diskusi Penentuan Project
 
-Project yang Dipilih:
+Project yang Di Diskusikan:
 
-- Kelompok3 mengusulkan membuat projek aplikasi To Do List Pengingat Tugas.
-- Anggota Kelompok berdiskusi dan menyepakati projek tersebut karena relevan dengan kebutuhan mahasiswa dalam mengelola berbagai tugas.
+1. Membuat projek aplikasi To Do List Pengingat Tugas.
+- Anggota Kelompok berdiskusi untuk membuat projek tersebut karena relevan dengan kebutuhan mahasiswa dalam mengelola berbagai tugas.
+
+2. 
