@@ -53,7 +53,5 @@
 
 Project yang Di Diskusikan:
 
-1. Membuat projek aplikasi To Do List Pengingat Tugas.
-- Anggota Kelompok berdiskusi untuk membuat projek tersebut karena relevan dengan kebutuhan mahasiswa dalam mengelola berbagai tugas.
-
-2. 
+Membuat projek aplikasi Kelola Lab Komputer dan Jaringan.
+- Anggota Kelompok berdiskusi untuk membuat projek tersebut karena relevan dengan kebutuhan guru dalam meminjam lab agar tidak bentrok dengan kelas lain.
