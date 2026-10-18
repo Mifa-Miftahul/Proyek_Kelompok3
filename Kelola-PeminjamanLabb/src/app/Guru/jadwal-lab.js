@@ -243,6 +243,7 @@ function LabCard({ lab, onPress }) {
           </Text>
         </View>
 
+
         <View style={styles.labFooter}>
           <View style={styles.scheduleCount}>
             <Ionicons
