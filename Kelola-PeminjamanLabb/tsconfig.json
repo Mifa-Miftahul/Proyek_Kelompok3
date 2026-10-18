@@ -16,5 +16,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "src/app/index.js", "src/app/index.js", "src/app/index.js", "src/app/Guru/login.js"  ]
+, "src/app/index.tsxx", src/app/index.tsxsx",src/app/index.tsxtsx", "src/app/Guru/login.js"  ]
 }

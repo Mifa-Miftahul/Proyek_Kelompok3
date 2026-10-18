@@ -26,11 +26,7 @@ export default function SplashScreen() {
 
       <View style={styles.logoContainer}>
         <View style={styles.logo}>
-          <Ionicons
-            name="laptop-outline"
-            size={112}
-            color={COLORS.navy}
-          />
+          <Ionicons name="laptop-outline" size={112} color={COLORS.navy} />
 
           <Ionicons
             name="happy-outline"
