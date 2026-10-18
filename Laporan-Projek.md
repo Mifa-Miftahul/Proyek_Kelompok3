@@ -63,4 +63,4 @@ Sistem Peminjaman dan Pengelolaan Laboratorium SMK Islamic Center Cirebon
 (Lampirkan screenshot atau GIF halaman Dashboard.)
 
 5. Jadwal Laboratorium
-(Lampirkan screenshot atau GIF halaman Dashboard.)
+![alt text](Jadwal-lab.gif)
