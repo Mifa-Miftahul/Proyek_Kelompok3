@@ -57,10 +57,12 @@ Sistem Peminjaman dan Pengelolaan Laboratorium SMK Islamic Center Cirebon
 (Lampirkan screenshot atau GIF halaman Dashboard.)
 
 3. Dashboard Guru
-(Lampirkan screenshot atau GIF halaman Dashboard.)
+
+![alt text](dashboard-guru.gif)
 
 4. Daftar Laboratorium
-(Lampirkan screenshot atau GIF halaman Dashboard.)
+
+![alt text](daftar-lab.gif)
 
 5. Jadwal Laboratorium
 
