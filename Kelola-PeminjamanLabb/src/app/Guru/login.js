@@ -61,9 +61,9 @@ export default function LoginGuru() {
             </View>
 
             <View style={styles.brandText}>
-              <Text style={styles.brandTitle}>PEMOB</Text>
+              <Text style={styles.brandTitle}>SILAKOM</Text>
               <Text style={styles.brandSubtitle}>
-                Pengelolaan Manajemen{"\n"}Laboratorium
+                Sistem Informasi Laboratorium Komputer
               </Text>
             </View>
           </View>
