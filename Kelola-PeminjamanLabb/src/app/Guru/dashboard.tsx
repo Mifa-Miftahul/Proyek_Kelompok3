@@ -1,5 +1,5 @@
-  import React, { useState } from 'react';
-  import {
+import React, { useState } from 'react';
+import {
     SafeAreaView,
     View,
     Text,
@@ -15,13 +15,15 @@
   import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
   import { useRouter } from 'expo-router';
 
-  import SummaryCard from '../../components/Molecules/SummaryCard';
+  // === IMPORT FROM COMPENENTS MOLECULES AND ORGANISMS ===
+  import SummaryPanelDashboard from '../../components/Organisms/SummaryPanelDashboard';
   import BottomNavigation from '../../components/Organisms/BottomNavigation';
+  import RequestSectionDashboard from '../../components/Organisms/RequestSectionDashboard';
+  import HeaderDashboard from '../../components/Molecules/HeaderDashboard';
 
-  // ==================== TYPES ====================
 
+  // === TYPES ===
   type RequestStatus = 'Accepted' | 'Pending' | 'Reject';
-
 
   type RequestItem = {
     id: string;
@@ -48,13 +50,8 @@
     accessibilityLabel?: string;
   };
 
-  type RequestCardProps = {
-    item: RequestItem;
-    onPress: (item: RequestItem) => void;
-  };
 
-  // ==================== COLORS ====================
-
+  // === COLORS ===
   const COLORS = {
     navy: '#223F91',
     blue: '#3B82F6',
@@ -70,8 +67,9 @@
     redText: '#EF4444',
   };
 
-  // ==================== DUMMY DATA ====================
 
+
+  // === DUMMY DATA HARDCODE FOR PENGAJUAN HARI INI AND RIWAYAT PENGAJUAN ===
   const todayRequests: RequestItem[] = [
     {
       id: 'PEM-001',
@@ -123,8 +121,9 @@
     },
   ];
 
-  // ==================== REUSABLE COMPONENTS ====================
 
+
+  // === REUSABLE COMPONENTS ===
   // Tombol dengan efek hover untuk web.
   function HoverableTouchable({
     children,
@@ -175,140 +174,9 @@
     );
   }
 
-  // Badge status pengajuan.
-  function StatusBadge({
-    status,
-  }: {
-    status: RequestStatus;
-  }) {
-    const config =
-      status === 'Accepted'
-        ? {
-            badge: styles.acceptedBadge,
-            text: styles.acceptedText,
-            label: 'Accepted',
-          }
-        : status === 'Reject'
-          ? {
-              badge: styles.rejectBadge,
-              text: styles.rejectText,
-              label: 'Reject',
-            }
-          : {
-              badge: styles.pendingBadge,
-              text: styles.pendingText,
-              label: 'Pending',
-            };
-
-    return (
-      <View style={[styles.statusBadge, config.badge]}>
-        <Text style={[styles.statusText, config.text]}>
-          {config.label}
-        </Text>
-      </View>
-    );
-  }
-
-  // Kartu setiap pengajuan.
-  function RequestCard({
-    item,
-    onPress,
-  }: RequestCardProps) {
-    return (
-      <TouchableCard
-        style={styles.requestCard}
-        onPress={() => onPress(item)}
-      >
-        <View style={styles.labIconCircle}>
-          <MaterialCommunityIcons
-            name={item.icon}
-            size={21}
-            color={COLORS.navy}
-          />
-        </View>
-
-        <View style={styles.requestDetails}>
-          <View style={styles.requestTitleRow}>
-            <Text
-              style={styles.labName}
-              numberOfLines={1}
-            >
-              {item.lab}
-            </Text>
-
-            <StatusBadge status={item.status} />
-          </View>
-
-          <View style={styles.metaRow}>
-            <Ionicons
-              name="calendar-outline"
-              size={12}
-              color={COLORS.muted}
-            />
-            <Text style={styles.metaText}>
-              {item.date}
-            </Text>
-          </View>
-
-          <View style={styles.metaBottomRow}>
-            <View style={styles.metaRow}>
-              <Ionicons
-                name="time-outline"
-                size={12}
-                color={COLORS.muted}
-              />
-              <Text style={styles.metaText}>
-                {item.time}
-              </Text>
-            </View>
-
-            <View style={styles.teacherMeta}>
-              <Ionicons
-                name="person"
-                size={12}
-                color={COLORS.muted}
-              />
-              <Text style={styles.metaText}>
-                Salwa Ayudia
-              </Text>
-            </View>
-          </View>
-        </View>
-      </TouchableCard>
-    );
-  }
-
-  // Judul bagian dengan tombol panah.
-  function SectionHeading({
-    title,
-    onPress,
-  }: {
-    title: string;
-    onPress: () => void;
-  }) {
-    return (
-      <Pressable
-        style={styles.sectionHeadingRow}
-        onPress={onPress}
-        accessibilityRole="button"
-      >
-        <Text style={styles.sectionTitle}>
-          {title}
-        </Text>
-
-        <Ionicons
-          name="chevron-forward"
-          size={17}
-          color={COLORS.blue}
-        />
-      </Pressable>
-    );
-  }
-
-  // Kartu ringkasan.
 
 
-  // ==================== DASHBOARD SCREEN ====================
+  // === DASHBOARD SCREEN ===
 
   export default function DashboardScreen() {
     const router = useRouter();
@@ -364,32 +232,27 @@
       });
     };
 
-    // Render setiap bagian daftar.
+    // Render setiap bagian daftar pengajuan.
+    
     const renderSection = ({
       item,
-    }: ListRenderItemInfo<SectionItem>) => (
-      <View style={styles.sectionCard}>
-        <SectionHeading
-          title={item.title}
-          onPress={() =>
-            goTo(
-              'RiwayatPengajuan',
-              item.id === 'today'
-                ? { filter: 'Today' }
-                : {},
-            )
-          }
-        />
+    }: ListRenderItemInfo<SectionItem>) => {
+      const isHistory = item.id === 'history';
 
-        {item.items.map((request) => (
-          <RequestCard
-            key={request.id}
-            item={request}
-            onPress={openRequest}
-          />
-        ))}
-      </View>
-    );
+      return (
+        <RequestSectionDashboard
+          title={item.title}
+          items={item.items}
+          onRequestPress={openRequest}
+          showArrow={isHistory}
+          onHeaderPress={() => {
+            if (isHistory) {
+              goTo('RiwayatPengajuan');
+            }
+          }}
+        />
+      );
+    };
 
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -406,32 +269,9 @@
             ]}
           >
             {/* HEADER */}
-            <View style={styles.header}>
-              <View style={styles.headerTextWrap}>
-                <Text style={styles.greeting}>
-                  Halo, Salwa Ayudia
-                </Text>
-
-                <Text style={styles.schoolName}>
-                  Guru - SMK Islamic Center Cirebon
-                </Text>
-              </View>
-
-              <HoverableTouchable
-                style={styles.notificationButton}
-                hoverStyle={styles.hoverNotification}
-                onPress={() => goTo('Notifikasi')}
-                accessibilityLabel="Buka notifikasi"
-              >
-                <Ionicons
-                name="notifications-outline"
-                size={28}
-                color={COLORS.white}
-              />
-
-                <View style={styles.notificationDot} />
-              </HoverableTouchable>
-            </View>
+            <HeaderDashboard
+              onNotificationPress={() => goTo('Notifikasi')}
+            />
 
             {/* KONTEN YANG BISA DI-SCROLL */}
             <FlatList<SectionItem>
@@ -447,19 +287,11 @@
                     Ringkasan
                   </Text>
 
-                  <View style={styles.summaryContainer}>
-                    <SummaryCard
-                      icon="time-outline"
-                      value={1}
-                      label={'Pengajuan\nPending'}
-                    />
-
-                    <SummaryCard
-                      icon="business-outline"
-                      value={3}
-                      label={'Total\nLaboratorium'}
-                    />
-                  </View>
+                  {/* SUMMARY PANEL */}
+                  <SummaryPanelDashboard
+                    pendingCount={1}
+                    laboratoryCount={3}
+                  />
                 </View>
               }
               ListFooterComponent={
@@ -478,7 +310,9 @@
     );
   }
 
-  // ==================== STYLES ====================
+
+
+  // === STYLES ===
 
   const styles = StyleSheet.create({
     safeArea: {
@@ -504,59 +338,6 @@
       borderLeftWidth: 1,
       borderRightWidth: 1,
       borderColor: '#E2E8F0',
-    },
-
-    // HEADER
-    header: {
-      minHeight: 85,
-      backgroundColor: COLORS.navy,
-      borderBottomLeftRadius: 17,
-      borderBottomRightRadius: 17,
-      paddingHorizontal: 24,
-      paddingTop: 20,
-      paddingBottom: 18,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-
-    headerTextWrap: {
-      flex: 1,
-      paddingRight: 12,
-    },
-
-    greeting: {
-      color: COLORS.white,
-      fontSize: 16,
-      fontWeight: '700',
-      marginBottom: 4,
-    },
-
-    schoolName: {
-      color: '#E0E7FF',
-      fontSize: 10,
-      fontWeight: '400',
-    },
-
-    notificationButton: {
-      width: 40,
-      height: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      borderRadius: 20,
-    },
-
-    notificationDot: {
-      position: 'absolute',
-      top: 6,
-      right: 7,
-      width: 7,
-      height: 7,
-      borderRadius: 4,
-      backgroundColor: '#FCA5A5',
-      borderWidth: 1,
-      borderColor: COLORS.navy,
     },
 
     // LIST
@@ -602,14 +383,6 @@
       fontSize: 12,
       fontWeight: '700',
       marginBottom: 11,
-    },
-
-    summaryContainer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 25,
-      flexWrap: 'wrap',
     },
 
     // SECTION CARDS
@@ -713,52 +486,7 @@
       fontWeight: '700',
     },
 
-    // STATUS BADGE
-    statusBadge: {
-      borderRadius: 8,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      minWidth: 48,
-      alignItems: 'center',
-    },
-
-    statusText: {
-      fontSize: 7,
-      fontWeight: '600',
-    },
-
-    acceptedBadge: {
-      backgroundColor: COLORS.greenBg,
-    },
-
-    acceptedText: {
-      color: COLORS.greenText,
-    },
-
-    pendingBadge: {
-      backgroundColor: COLORS.yellowBg,
-    },
-
-    pendingText: {
-      color: COLORS.yellowText,
-    },
-
-    rejectBadge: {
-      backgroundColor: COLORS.redBg,
-    },
-
-    rejectText: {
-      color: COLORS.redText,
-    },
-
     // REQUEST METADATA
-    metaRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      marginBottom: 3,
-    },
-
     metaBottomRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
