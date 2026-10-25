@@ -1,41 +1,46 @@
-import { View, Text, StyleSheet } from "react-native";
+
+import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function LogoSILAKOM() {
-  return (
-    <View style={styles.container}>
-      <View style={styles.logoCircle}>
-        <Ionicons
-          name="desktop-outline"
-          size={48}
-          color="#FFFFFF"
-        />
-      </View>
+type LogoSILAKOMProps = {
+  size?: number;
+  color?: string;
+};
 
-      <Text style={styles.logoText}>SILAKOM</Text>
+export default function LogoSILAKOM({
+  size = 155,
+  color = "#1E3A8A",
+}: LogoSILAKOMProps) {
+  return (
+    <View
+      style={[
+        styles.logo,
+        {
+          width: size,
+          height: size * 0.94,
+        },
+      ]}
+    >
+      <Ionicons
+        name="laptop-outline"
+        size={size * 0.72}
+        color={color}
+      />
+
+      <Ionicons
+        name="happy-outline"
+        size={size * 0.28}
+        color={color}
+        style={{ position: "absolute", top: size * 0.28 }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  logo: {
     alignItems: "center",
-  },
-
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#176B5B",
     justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
-  logoText: {
-    fontSize: 25,
-    fontWeight: "bold",
-    color: "#176B5B",
-    letterSpacing: 3,
+    position: "relative",
   },
 });

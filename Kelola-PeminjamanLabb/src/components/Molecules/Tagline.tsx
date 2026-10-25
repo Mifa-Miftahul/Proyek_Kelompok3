@@ -1,21 +1,34 @@
-import React from "react";
-import { Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 
 export default function Tagline() {
   return (
-    <Text style={styles.tagline}>
-      Kelola Laboratorium dengan Mudah,{"\n"}
-      Efisien, dan Terintegrasi
-    </Text>
+    <View style={styles.container}>
+      <View style={styles.divider} />
+
+      <Text style={styles.tagline}>
+        "Kelola Laboratorium dengan Mudah,{"\n"}
+        Efisien, dan Terintegrasi"
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+  },
+  divider: {
+    height: 1,
+    width: 225,
+    backgroundColor: "#1E3A8A",
+    marginTop: 4,
+    marginBottom: 9,
+  },
   tagline: {
-    fontSize: 12,
-    lineHeight: 19,
-    color: "#1E3A8A",
     textAlign: "center",
+    color: "#111827",
+    fontSize: 12,
     fontStyle: "italic",
+    lineHeight: 19,
   },
 });
