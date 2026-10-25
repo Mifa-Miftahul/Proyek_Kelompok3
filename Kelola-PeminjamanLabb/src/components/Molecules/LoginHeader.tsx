@@ -1,6 +1,7 @@
 
 import { View, Text, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+
+import LogoSILAKOM from "./LogoSILAKOM";
 
 const COLORS = {
   navy: "#1E3A8A",
@@ -13,11 +14,7 @@ export default function LoginHeader() {
     <View style={styles.container}>
       <View style={styles.brandRow}>
         <View style={styles.brandIcon}>
-          <Ionicons
-            name="flask-outline"
-            size={36}
-            color={COLORS.white}
-          />
+          <LogoSILAKOM size={52} color="#FFFFFF" />
         </View>
 
         <View style={styles.brandText}>
