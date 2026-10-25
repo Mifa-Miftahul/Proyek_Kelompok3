@@ -129,30 +129,18 @@ function LabCard({ lab, onPress }: LabCardProps) {
       </View>
 
       <View style={styles.labDetails}>
-        <InfoLab
-          name={lab.name}
-          room={lab.room}
-          totalDevices={totalDevices}
-          status={lab.status}
-          deviceTypes={lab.perangkat.length}
-        />
-
         <Pressable
-          style={({ pressed }) => [
-            styles.viewDetailButton,
-            pressed && styles.pressedButton,
-          ]}
+          style={({ pressed }) => [pressed && styles.pressedButton]}
           onPress={onPress}
           accessibilityRole="button"
           accessibilityLabel={`Lihat detail ${lab.name}`}
         >
-          <Text style={styles.viewDetailButtonText}>
-            Lihat Detail
-          </Text>
-          <Ionicons
-            name="arrow-forward"
-            size={15}
-            color={COLORS.blue}
+          <InfoLab
+            name={lab.name}
+            room={lab.room}
+            totalDevices={totalDevices}
+            status={lab.status}
+            deviceTypes={lab.perangkat.length}
           />
         </Pressable>
       </View>
@@ -402,14 +390,14 @@ export default function DaftarLabScreen() {
                             item.nama === 'Komputer'
                               ? 'desktop-classic'
                               : item.nama === 'Proyektor'
-                                ? 'projector'
-                                : item.nama === 'Router'
-                                  ? 'router-wireless'
-                                  : item.nama === 'Switch'
-                                    ? 'lan'
-                                    : item.nama === 'Access Point'
-                                      ? 'access-point'
-                                      : 'devices'
+                              ? 'projector'
+                              : item.nama === 'Router'
+                              ? 'router-wireless'
+                              : item.nama === 'Switch'
+                              ? 'lan'
+                              : item.nama === 'Access Point'
+                              ? 'access-point'
+                              : 'devices'
                           }
                           size={21}
                           color={COLORS.navy}
@@ -532,21 +520,6 @@ const styles = StyleSheet.create({
   labDetails: {
     flex: 1,
     minWidth: 0,
-  },
-
-  viewDetailButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 5,
-    marginTop: 10,
-    paddingVertical: 5,
-  },
-
-  viewDetailButtonText: {
-    color: COLORS.blue,
-    fontSize: 11,
-    fontWeight: '600',
   },
 
   pressedButton: {
