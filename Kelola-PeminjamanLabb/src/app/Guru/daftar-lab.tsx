@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -11,6 +12,11 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
+import BottomNavigation from '../../components/Organisms/BottomNavigation';
+import InfoRowDaftarLab from '../../components/Molecules/InfoRowDaftarLab';
+import HeaderDaftarLab from '../../components/Molecules/HeaderDaftarLab';
+import InfoLab from '../../components/Organisms/InfoLab';
 
 const COLORS = {
   navy: '#223F91',
@@ -27,7 +33,41 @@ const COLORS = {
   paleRed: '#FEE2E2',
 };
 
-const LABS = [
+type LabStatus = 'Available' | 'Occupied';
+
+type Device = {
+  nama: string;
+  jumlah: number;
+};
+
+type Lab = {
+  id: string;
+  name: string;
+  location: string;
+  room: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  description: string;
+  laboran: string;
+  perangkat: Device[];
+  status: LabStatus;
+};
+
+type StatusBadgeProps = {
+  status: LabStatus;
+};
+
+type LabCardProps = {
+  lab: Lab;
+  onPress: () => void;
+};
+
+type NavigationRoute =
+  | 'Dashboard'
+  | 'JadwalLab'
+  | 'DaftarLab'
+  | 'BuatPeminjaman';
+
+const LABS: Lab[] = [
   {
     id: 'LAB-001',
     name: 'Lab Pemrograman',
@@ -42,12 +82,12 @@ const LABS = [
       { nama: 'Proyektor', jumlah: 1 },
       { nama: 'Switch', jumlah: 2 },
     ],
-    status: 'Tersedia',
+    status: 'Available',
   },
   {
     id: 'LAB-002',
     name: 'Lab Jaringan',
-    location: 'Gedung Informatika',
+    location: 'Gedung Teknik ',
     room: 'Ruang Lab 2',
     icon: 'lan',
     description: 'Laboratorium untuk praktikum jaringan komputer.',
@@ -58,7 +98,7 @@ const LABS = [
       { nama: 'Switch', jumlah: 8 },
       { nama: 'Access Point', jumlah: 3 },
     ],
-    status: 'Sedang Dipakai',
+    status: 'Occupied',
   },
   {
     id: 'LAB-003',
@@ -73,69 +113,14 @@ const LABS = [
       { nama: 'Perangkat Fiber Optik', jumlah: 10 },
       { nama: 'Proyektor', jumlah: 1 },
     ],
-    status: 'Tersedia',
+    status: 'Available',
   },
 ];
 
-function HoverableButton({
-  children,
-  style,
-  hoverStyle,
-  onPress,
-  ...props
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <Pressable
-      {...props}
-      onPress={onPress}
-      onHoverIn={() => setIsHovered(true)}
-      onHoverOut={() => setIsHovered(false)}
-      style={[
-        style,
-        Platform.OS === 'web' && isHovered ? hoverStyle : null,
-      ]}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
-function StatusBadge({ status }) {
-  const isAvailable = status === 'Tersedia';
-
-  return (
-    <View
-      style={[
-        styles.statusBadge,
-        isAvailable ? styles.availableBadge : styles.busyBadge,
-      ]}
-    >
-      <View
-        style={[
-          styles.statusDot,
-          {
-            backgroundColor: isAvailable ? COLORS.green : COLORS.red,
-          },
-        ]}
-      />
-      <Text
-        style={[
-          styles.statusText,
-          { color: isAvailable ? COLORS.green : COLORS.red },
-        ]}
-      >
-        {status}
-      </Text>
-    </View>
-  );
-}
-
-function LabCard({ lab, onPress }) {
+function LabCard({ lab, onPress }: LabCardProps) {
   const totalDevices = lab.perangkat.reduce(
     (total, item) => total + item.jumlah,
-    0
+    0,
   );
 
   return (
@@ -146,6 +131,7 @@ function LabCard({ lab, onPress }) {
       ]}
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={`Lihat detail ${lab.name}`}
     >
       <View style={styles.labIconCircle}>
         <MaterialCommunityIcons
@@ -156,95 +142,46 @@ function LabCard({ lab, onPress }) {
       </View>
 
       <View style={styles.labDetails}>
-        <View style={styles.labTitleRow}>
-          <Text style={styles.labName}>{lab.name}</Text>
-          <StatusBadge status={lab.status} />
-        </View>
-
-        <Text style={styles.labId}>{lab.id}</Text>
-
-        <View style={styles.infoRow}>
-          <Ionicons
-            name="location-outline"
-            size={14}
-            color={COLORS.muted}
-          />
-          <Text style={styles.infoText}>
-            {lab.room} · {lab.location}
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons
-            name="hardware-chip-outline"
-            size={14}
-            color={COLORS.muted}
-          />
-          <Text style={styles.infoText}>
-            {totalDevices} unit perangkat
-          </Text>
-        </View>
-
-        <View style={styles.labFooter}>
-          <View style={styles.scheduleCount}>
-            <Ionicons
-              name="business-outline"
-              size={14}
-              color={COLORS.blue}
-            />
-            <Text style={styles.scheduleCountText}>
-              {lab.perangkat.length} jenis perangkat
-            </Text>
-          </View>
-
-          <View style={styles.viewDetail}>
-            <Text style={styles.viewDetailText}>Lihat Detail</Text>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={COLORS.blue}
-            />
-          </View>
-        </View>
+        <InfoLab
+          name={lab.name}
+          room={lab.room}
+          totalDevices={totalDevices}
+          status={lab.status}
+          deviceTypes={lab.perangkat.length}
+          onDetail={onPress}
+        />
       </View>
     </Pressable>
   );
 }
 
-function InfoRow({ icon, label, value }) {
-  return (
-    <View style={styles.detailInfoRow}>
-      <View style={styles.detailInfoIcon}>
-        <Ionicons name={icon} size={19} color={COLORS.navy} />
-      </View>
-
-      <View style={styles.detailInfoText}>
-        <Text style={styles.detailInfoLabel}>{label}</Text>
-        <Text style={styles.detailInfoValue}>{value}</Text>
-      </View>
-    </View>
-  );
-}
-
 export default function DaftarLabScreen() {
   const router = useRouter();
-  const [selectedLab, setSelectedLab] = useState(null);
+  const [selectedLab, setSelectedLab] = useState<Lab | null>(null);
 
-  const isAvailable = selectedLab?.status === 'Tersedia';
+  const isAvailable = selectedLab?.status === 'Available';
 
   const totalDevices = selectedLab
     ? selectedLab.perangkat.reduce(
         (total, item) => total + item.jumlah,
-        0
+        0,
       )
     : 0;
 
-  const goBack = () => {
-    if (selectedLab) {
+  const handleNavigate = (route: NavigationRoute) => {
+    const routes: Record<NavigationRoute, string> = {
+      Dashboard: '/Guru/dashboard',
+      JadwalLab: '/Guru/jadwal-lab',
+      DaftarLab: '/Guru/daftar-lab',
+      BuatPeminjaman: '/Guru/peminjaman',
+    };
+
+    if (route === 'DaftarLab') {
       setSelectedLab(null);
-    } else {
-      router.replace('/Guru/dashboard');
+      return;
     }
+
+    router.replace(routes[route] as never);
   };
 
   return (
@@ -255,37 +192,14 @@ export default function DaftarLabScreen() {
       />
 
       <View style={styles.screen}>
-        <View style={styles.header}>
-          <HoverableButton
-            style={styles.backButton}
-            hoverStyle={styles.hoverBackButton}
-            onPress={goBack}
-            accessibilityLabel="Kembali"
-          >
-            <Ionicons
-              name="arrow-back"
-              size={23}
-              color={COLORS.white}
-            />
-          </HoverableButton>
-
-          <View style={styles.headerTextWrap}>
-            <Text style={styles.headerTitle}>Daftar Laboratorium</Text>
-            <Text style={styles.headerSubtitle}>
-              {selectedLab
-                ? selectedLab.name
-                : 'Informasi dan fasilitas laboratorium'}
-            </Text>
-          </View>
-
-          <View style={styles.headerIcon}>
-            <Ionicons
-              name="business-outline"
-              size={24}
-              color={COLORS.white}
-            />
-          </View>
-        </View>
+        <HeaderDaftarLab
+          title="Daftar Laboratorium"
+          description={
+            selectedLab
+              ? selectedLab.name
+              : 'Informasi dan fasilitas laboratorium'
+          }
+        />
 
         <ScrollView
           style={styles.scrollView}
@@ -293,28 +207,17 @@ export default function DaftarLabScreen() {
           showsVerticalScrollIndicator={false}
         >
           {!selectedLab ? (
-            <>
-              <View style={styles.introSection}>
-                <Text style={styles.pageTitle}>Daftar Lab</Text>
-                <Text style={styles.pageDescription}>
-                  Pilih laboratorium untuk melihat informasi,
-                  laboran penanggung jawab, dan perangkat yang tersedia.
-                </Text>
-              </View>
-
-              <View style={styles.labList}>
-                {LABS.map((lab) => (
-                  <LabCard
-                    key={lab.id}
-                    lab={lab}
-                    onPress={() => setSelectedLab(lab)}
-                  />
-                ))}
-              </View>
-            </>
+            <View style={styles.labList}>
+              {LABS.map((lab) => (
+                <LabCard
+                  key={lab.id}
+                  lab={lab}
+                  onPress={() => setSelectedLab(lab)}
+                />
+              ))}
+            </View>
           ) : (
             <>
-
               <View style={styles.selectedLabCard}>
                 <View style={styles.selectedLabIcon}>
                   <MaterialCommunityIcons
@@ -329,10 +232,6 @@ export default function DaftarLabScreen() {
                     {selectedLab.name}
                   </Text>
 
-                  <Text style={styles.selectedLabId}>
-                    {selectedLab.id}
-                  </Text>
-
                   <View style={styles.infoRow}>
                     <Ionicons
                       name="location-outline"
@@ -340,7 +239,7 @@ export default function DaftarLabScreen() {
                       color={COLORS.muted}
                     />
                     <Text style={styles.infoText}>
-                      {selectedLab.room} · {selectedLab.location}
+                      {selectedLab.room}
                     </Text>
                   </View>
 
@@ -388,6 +287,7 @@ export default function DaftarLabScreen() {
                   <Text style={styles.statusPanelLabel}>
                     Status Laboratorium
                   </Text>
+
                   <Text
                     style={[
                       styles.statusPanelValue,
@@ -398,6 +298,7 @@ export default function DaftarLabScreen() {
                   >
                     {selectedLab.status}
                   </Text>
+
                   <Text style={styles.statusPanelDescription}>
                     {isAvailable
                       ? 'Laboratorium sedang tidak digunakan.'
@@ -413,8 +314,14 @@ export default function DaftarLabScreen() {
                     size={21}
                     color={COLORS.blue}
                   />
-                  <Text style={styles.statNumber}>{totalDevices}</Text>
-                  <Text style={styles.statLabel}>Total Perangkat</Text>
+
+                  <Text style={styles.statNumber}>
+                    {totalDevices}
+                  </Text>
+
+                  <Text style={styles.statLabel}>
+                    Total Perangkat
+                  </Text>
                 </View>
 
                 <View style={styles.statCard}>
@@ -423,10 +330,14 @@ export default function DaftarLabScreen() {
                     size={21}
                     color={COLORS.green}
                   />
+
                   <Text style={styles.statNumber}>
                     {selectedLab.perangkat.length}
                   </Text>
-                  <Text style={styles.statLabel}>Jenis Perangkat</Text>
+
+                  <Text style={styles.statLabel}>
+                    Jenis Perangkat
+                  </Text>
                 </View>
               </View>
 
@@ -434,21 +345,22 @@ export default function DaftarLabScreen() {
                 <Text style={styles.sectionTitle}>
                   Informasi Laboratorium
                 </Text>
+
                 <View style={styles.sectionDivider} />
 
-                <InfoRow
+                <InfoRowDaftarLab
                   icon="person-outline"
                   label="Laboran Penanggung Jawab"
                   value={selectedLab.laboran}
                 />
 
-                <InfoRow
+                <InfoRowDaftarLab
                   icon="location-outline"
-                  label="Lokasi Laboratorium"
-                  value={`${selectedLab.room}, ${selectedLab.location}`}
+                  label="Ruang Laboratorium"
+                  value={selectedLab.room}
                 />
 
-                <InfoRow
+                <InfoRowDaftarLab
                   icon="checkmark-circle-outline"
                   label="Status Laboratorium"
                   value={selectedLab.status}
@@ -461,6 +373,7 @@ export default function DaftarLabScreen() {
                     <Text style={styles.sectionTitle}>
                       Daftar Perangkat
                     </Text>
+
                     <Text style={styles.sectionSubtitle}>
                       Perangkat yang tersedia di laboratorium
                     </Text>
@@ -521,15 +434,20 @@ export default function DaftarLabScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.changeLabButton,
-                  Platform.OS !== 'web' && pressed && styles.pressedButton,
+                  Platform.OS !== 'web' &&
+                    pressed &&
+                    styles.pressedButton,
                 ]}
                 onPress={() => setSelectedLab(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Pilih laboratorium lain"
               >
                 <Ionicons
                   name="swap-horizontal-outline"
                   size={18}
                   color={COLORS.white}
                 />
+
                 <Text style={styles.changeLabButtonText}>
                   Pilih Laboratorium Lain
                 </Text>
@@ -538,69 +456,12 @@ export default function DaftarLabScreen() {
           )}
         </ScrollView>
 
-        <View style={styles.bottomBar}>
-          <HoverableButton
-            style={styles.navItem}
-            hoverStyle={styles.hoverNavItem}
-            onPress={() => router.replace('/Guru/dashboard')}
-          >
-            <View style={styles.navIconWrap}>
-              <Ionicons
-                name="home-outline"
-                size={24}
-                color={COLORS.white}
-              />
-            </View>
-            <Text style={styles.navLabel}>Dashboard</Text>
-          </HoverableButton>
-
-          <HoverableButton
-            style={styles.navItem}
-            hoverStyle={styles.hoverNavItem}
-            onPress={() => router.replace('/Guru/jadwal-lab')}
-          >
-            <View style={styles.navIconWrap}>
-              <Ionicons
-                name="calendar-outline"
-                size={24}
-                color={COLORS.white}
-              />
-            </View>
-            <Text style={styles.navLabel}>Jadwal Lab</Text>
-          </HoverableButton>
-
-          <HoverableButton
-            style={styles.navItem}
-            hoverStyle={styles.hoverNavItem}
-            onPress={() => router.replace('/Guru/daftar-lab')}
-          >
-            <View style={[styles.navIconWrap, styles.activeNavIcon]}>
-              <Ionicons
-                name="business"
-                size={24}
-                color={COLORS.navy}
-              />
-            </View>
-            <Text style={[styles.navLabel, styles.activeNavLabel]}>
-              Daftar Lab
-            </Text>
-          </HoverableButton>
-
-          <HoverableButton
-            style={styles.navItem}
-            hoverStyle={styles.hoverNavItem}
-            onPress={() => router.replace('/Guru/peminjaman')}
-          >
-            <View style={styles.navIconWrap}>
-              <Ionicons
-                name="calendar-clear-outline"
-                size={24}
-                color={COLORS.white}
-              />
-            </View>
-            <Text style={styles.navLabel}>Peminjaman Lab</Text>
-          </HoverableButton>
-        </View>
+        <BottomNavigation
+          activeRoute="DaftarLab"
+          onNavigate={(route) =>
+            handleNavigate(route as NavigationRoute)
+          }
+        />
       </View>
     </SafeAreaView>
   );
@@ -621,55 +482,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
 
-  header: {
-    minHeight: 82,
-    backgroundColor: COLORS.navy,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
-  },
-
-  hoverBackButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-
-  headerTextWrap: {
-    flex: 1,
-  },
-
-  headerTitle: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  headerSubtitle: {
-    color: '#DCE7FF',
-    fontSize: 10,
-    marginTop: 4,
-  },
-
-  headerIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
   scrollView: {
     flex: 1,
   },
@@ -678,23 +490,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 14,
     paddingBottom: 24,
-  },
-
-  introSection: {
-    marginBottom: 16,
-  },
-
-  pageTitle: {
-    color: COLORS.navy,
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-
-  pageDescription: {
-    color: COLORS.muted,
-    fontSize: 12,
-    lineHeight: 19,
   },
 
   labList: {
@@ -756,12 +551,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
 
-  labId: {
-    color: COLORS.muted,
-    fontSize: 10,
-    marginBottom: 7,
-  },
-
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -773,34 +562,6 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     fontSize: 11,
     flexShrink: 1,
-  },
-
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-
-  availableBadge: {
-    backgroundColor: COLORS.paleGreen,
-  },
-
-  busyBadge: {
-    backgroundColor: COLORS.paleRed,
-  },
-
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-
-  statusText: {
-    fontSize: 9,
-    fontWeight: '600',
   },
 
   labFooter: {
@@ -835,26 +596,6 @@ const styles = StyleSheet.create({
 
   viewDetailText: {
     color: COLORS.blue,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
-  backToList: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    backgroundColor: COLORS.white,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E8EEF8',
-    marginBottom: 14,
-  },
-
-  backToListText: {
-    color: COLORS.navy,
     fontSize: 11,
     fontWeight: '600',
   },
@@ -898,12 +639,6 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     fontSize: 15,
     fontWeight: '700',
-    marginBottom: 4,
-  },
-
-  selectedLabId: {
-    color: COLORS.muted,
-    fontSize: 10,
     marginBottom: 7,
   },
 
@@ -1147,70 +882,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  pressedButton: {
-    opacity: 0.85,
-  },
-
   changeLabButtonText: {
-    color: COLORS.white,
-    fontSize: 12,
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
   },
 
-  bottomBar: {
-    minHeight: 64,
-    backgroundColor: COLORS.navy,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingTop: 5,
-    paddingBottom: Platform.OS === 'ios' ? 12 : 4,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-  },
-
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 54,
-    gap: 3,
-    borderRadius: 12,
-  },
-
-  navIconWrap: {
-    width: 42,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 18,
-  },
-
-  activeNavIcon: {
-    backgroundColor: COLORS.white,
-    width: 47,
-    height: 39,
-    marginTop: -15,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-
-  navLabel: {
-    color: '#E0E7FF',
-    fontSize: 8,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-
-  activeNavLabel: {
-    color: COLORS.white,
-    fontWeight: '700',
-  },
-
-  hoverNavItem: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  pressedButton: {
+    opacity: 0.85,
   },
 });
