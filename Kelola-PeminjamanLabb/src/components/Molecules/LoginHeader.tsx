@@ -13,7 +13,7 @@ export default function LoginHeader() {
   return (
     <View style={styles.container}>
       <View style={styles.brandRow}>
-        < View style={styles.brandIcon}>
+        <View style={styles.brandIcon}>
           <LogoSILAKOM size={52} color="#FFFFFF" />
         </View>
 
