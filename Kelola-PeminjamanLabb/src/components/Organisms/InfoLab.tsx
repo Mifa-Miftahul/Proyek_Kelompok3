@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,7 +17,6 @@ type InfoLabProps = {
   totalDevices: number;
   status: LabStatus;
   deviceTypes: number;
-  onDetail: () => void;
 };
 
 export default function InfoLab({
@@ -27,7 +25,6 @@ export default function InfoLab({
   totalDevices,
   status,
   deviceTypes,
-  onDetail,
 }: InfoLabProps) {
   return (
     <View style={styles.container}>
@@ -55,23 +52,23 @@ export default function InfoLab({
             size={14}
             color="#3B82F6"
           />
+
           <Text style={styles.deviceTypesText}>
             {deviceTypes} jenis perangkat
           </Text>
         </View>
 
-        <Pressable
-          style={styles.detailButton}
-          onPress={onDetail}
-          accessibilityRole="button"
-        >
-          <Text style={styles.detailText}>Lihat Detail</Text>
+        <View style={styles.detailButton}>
+          <Text style={styles.detailText}>
+            Lihat Detail
+          </Text>
+
           <Ionicons
             name="chevron-forward"
             size={16}
-            color="#3B82F6"
+            color="#223F91"
           />
-        </Pressable>
+        </View>
       </View>
     </View>
   );

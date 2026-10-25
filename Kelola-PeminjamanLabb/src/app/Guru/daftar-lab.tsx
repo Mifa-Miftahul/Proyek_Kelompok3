@@ -148,7 +148,6 @@ function LabCard({ lab, onPress }: LabCardProps) {
           totalDevices={totalDevices}
           status={lab.status}
           deviceTypes={lab.perangkat.length}
-          onDetail={onPress}
         />
       </View>
     </Pressable>
