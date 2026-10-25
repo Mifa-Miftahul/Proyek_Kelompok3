@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -52,10 +51,6 @@ type Lab = {
   status: LabStatus;
 };
 
-type StatusBadgeProps = {
-  status: LabStatus;
-};
-
 type LabCardProps = {
   lab: Lab;
   onPress: () => void;
@@ -87,7 +82,7 @@ const LABS: Lab[] = [
   {
     id: 'LAB-002',
     name: 'Lab Jaringan',
-    location: 'Gedung Teknik ',
+    location: 'Gedung Teknik',
     room: 'Ruang Lab 2',
     icon: 'lan',
     description: 'Laboratorium untuk praktikum jaringan komputer.',
@@ -124,15 +119,7 @@ function LabCard({ lab, onPress }: LabCardProps) {
   );
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.labCard,
-        Platform.OS !== 'web' && pressed && styles.pressedCard,
-      ]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Lihat detail ${lab.name}`}
-    >
+    <View style={styles.labCard}>
       <View style={styles.labIconCircle}>
         <MaterialCommunityIcons
           name={lab.icon}
@@ -142,16 +129,22 @@ function LabCard({ lab, onPress }: LabCardProps) {
       </View>
 
       <View style={styles.labDetails}>
-        <InfoLab
-          name={lab.name}
-          room={lab.room}
-          totalDevices={totalDevices}
-          status={lab.status}
-          deviceTypes={lab.perangkat.length}
-          onDetail={onPress}
-        />
+        <Pressable
+          style={({ pressed }) => [pressed && styles.pressedButton]}
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={`Lihat detail ${lab.name}`}
+        >
+          <InfoLab
+            name={lab.name}
+            room={lab.room}
+            totalDevices={totalDevices}
+            status={lab.status}
+            deviceTypes={lab.perangkat.length}
+          />
+        </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -397,14 +390,14 @@ export default function DaftarLabScreen() {
                             item.nama === 'Komputer'
                               ? 'desktop-classic'
                               : item.nama === 'Proyektor'
-                                ? 'projector'
-                                : item.nama === 'Router'
-                                  ? 'router-wireless'
-                                  : item.nama === 'Switch'
-                                    ? 'lan'
-                                    : item.nama === 'Access Point'
-                                      ? 'access-point'
-                                      : 'devices'
+                              ? 'projector'
+                              : item.nama === 'Router'
+                              ? 'router-wireless'
+                              : item.nama === 'Switch'
+                              ? 'lan'
+                              : item.nama === 'Access Point'
+                              ? 'access-point'
+                              : 'devices'
                           }
                           size={21}
                           color={COLORS.navy}
@@ -434,9 +427,7 @@ export default function DaftarLabScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.changeLabButton,
-                  Platform.OS !== 'web' &&
-                    pressed &&
-                    styles.pressedButton,
+                  pressed && styles.pressedButton,
                 ]}
                 onPress={() => setSelectedLab(null)}
                 accessibilityRole="button"
@@ -516,10 +507,6 @@ const styles = StyleSheet.create({
     }),
   },
 
-  pressedCard: {
-    opacity: 0.9,
-  },
-
   labIconCircle: {
     width: 48,
     height: 48,
@@ -535,20 +522,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
 
-  labTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 7,
-    marginBottom: 4,
-  },
-
-  labName: {
-    color: COLORS.navy,
-    fontSize: 14,
-    fontWeight: '700',
-    flexShrink: 1,
+  pressedButton: {
+    opacity: 0.85,
   },
 
   infoRow: {
@@ -562,42 +537,6 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     fontSize: 11,
     flexShrink: 1,
-  },
-
-  labFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 7,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#EDF1F7',
-  },
-
-  scheduleCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-
-  scheduleCountText: {
-    color: COLORS.blue,
-    fontSize: 10,
-    fontWeight: '600',
-  },
-
-  viewDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-
-  viewDetailText: {
-    color: COLORS.blue,
-    fontSize: 11,
-    fontWeight: '600',
   },
 
   selectedLabCard: {
@@ -767,40 +706,6 @@ const styles = StyleSheet.create({
     marginVertical: 15,
   },
 
-  detailInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 11,
-    marginBottom: 16,
-  },
-
-  detailInfoIcon: {
-    width: 38,
-    height: 38,
-    backgroundColor: COLORS.paleBlue,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  detailInfoText: {
-    flex: 1,
-    paddingTop: 2,
-  },
-
-  detailInfoLabel: {
-    color: COLORS.muted,
-    fontSize: 11,
-    marginBottom: 4,
-  },
-
-  detailInfoValue: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 18,
-  },
-
   deviceTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -886,9 +791,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-  },
-
-  pressedButton: {
-    opacity: 0.85,
   },
 });
