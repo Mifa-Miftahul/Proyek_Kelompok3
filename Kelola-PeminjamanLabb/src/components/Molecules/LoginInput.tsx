@@ -1,4 +1,3 @@
-
 import {
   View,
   Text,
@@ -22,6 +21,8 @@ type LoginInputProps = {
   keyboardType?: KeyboardTypeOptions;
   returnKeyType?: ReturnKeyTypeOptions;
   onSubmitEditing?: () => void;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoCorrect?: boolean;
 };
 
 const COLORS = {
@@ -43,17 +44,15 @@ export default function LoginInput({
   keyboardType = "default",
   returnKeyType = "next",
   onSubmitEditing,
+  autoCapitalize = "none",
+  autoCorrect,
 }: LoginInputProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
 
       <View style={styles.inputContainer}>
-        <Ionicons
-          name={icon}
-          size={20}
-          color={COLORS.muted}
-        />
+        <Ionicons name={icon} size={20} color={COLORS.muted} />
 
         <TextInput
           style={styles.input}
@@ -62,7 +61,8 @@ export default function LoginInput({
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry && !showPassword}
-          autoCapitalize="none"
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
           keyboardType={keyboardType}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
