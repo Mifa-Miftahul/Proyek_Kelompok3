@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,50 +12,97 @@ import LoginButton from "../Molecules/LoginButton";
 
 const COLORS = {
   navy: "#1E3A8A",
-  lightBlue: "#DBEAFE",
-  white: "#FFFFFF",
   muted: "#64748B",
 };
 
-export default function LoginForm() {
-  const [email, setEmail] = useState("");
+type Role = "Guru" | "Laboran";
+
+// Halaman awal tiap peran setelah login. Peran ditentukan oleh halaman
+// login yang dipakai (app/Guru/login.tsx atau app/Laboran/login.tsx),
+// bukan dipilih di layar.
+const HOME_ROUTE: Record<Role, string> = {
+  Guru: "/Guru/dashboard",
+  Laboran: "/Laboran/dashboard",
+};
+
+type LoginFormProps = {
+  role?: Role;
+};
+
+type Errors = {
+  nip?: string;
+  password?: string;
+};
+
+// Konten form login. Kartu pembungkusnya ada di LoginLayout (satu lapis).
+export default function LoginForm({ role = "Guru" }: LoginFormProps) {
+  const [nip, setNip] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Errors>({});
+  const [loading, setLoading] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleLogin = () => {
-    if (!email.trim() || !password.trim()) {
-      setError("Email/NIP dan password wajib diisi.");
-      return;
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+
+  // Validasi form sebelum masuk
+  const validate = () => {
+    const next: Errors = {};
+
+    if (!nip) {
+      next.nip = "NIP wajib diisi.";
+    } else if (!/^\d{8,18}$/.test(nip)) {
+      next.nip = "NIP harus berupa angka 8 sampai 18 digit.";
     }
 
-    setError("");
+    if (!password) {
+      next.password = "Password wajib diisi.";
+    } else if (password.length < 6) {
+      next.password = "Password minimal 6 karakter.";
+    }
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleLogin = () => {
+    if (loading || !validate()) return;
+
+    setLoading(true);
 
     // Navigasi untuk pengujian UI.
     // Belum melakukan autentikasi ke database.
-    router.replace("/Guru/dashboard");
+    timer.current = setTimeout(() => {
+      router.replace(HOME_ROUTE[role] as never);
+    }, 700);
   };
 
   return (
-    <View style={styles.card}>
-
-      <Text style={styles.welcome}>Selamat Datang, Guru!</Text>
+    <View>
+      <Text style={styles.welcome}>Selamat Datang, {role}!</Text>
 
       <Text style={styles.description}>
-        Masuk untuk melanjutkan ke aplikasi SILAKOM.
+        Masuk dengan NIP dan password kamu untuk melanjutkan ke aplikasi SILAKOM.
       </Text>
 
       <LoginInput
-        label="Email atau NIP"
-        placeholder="Masukkan email atau NIP"
-        value={email}
+        label="NIP"
+        placeholder="Masukkan NIP"
+        value={nip}
         onChangeText={(value) => {
-          setEmail(value);
-          if (error) setError("");
+          // NIP hanya angka
+          setNip(value.replace(/\D/g, ""));
+          if (errors.nip) setErrors((prev) => ({ ...prev, nip: undefined }));
         }}
-        icon="person-outline"
-        keyboardType="email-address"
+        icon="card-outline"
+        keyboardType="number-pad"
         returnKeyType="next"
+        maxLength={18}
+        error={errors.nip}
       />
 
       <LoginInput
@@ -65,21 +111,20 @@ export default function LoginForm() {
         value={password}
         onChangeText={(value) => {
           setPassword(value);
-          if (error) setError("");
+          if (errors.password) {
+            setErrors((prev) => ({ ...prev, password: undefined }));
+          }
         }}
         icon="lock-closed-outline"
         secureTextEntry
         showPassword={showPassword}
-        onTogglePassword={() =>
-          setShowPassword((previous) => !previous)
-        }
+        onTogglePassword={() => setShowPassword((previous) => !previous)}
         returnKeyType="done"
         onSubmitEditing={handleLogin}
+        error={errors.password}
       />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <LoginButton onPress={handleLogin} />
+      <LoginButton onPress={handleLogin} loading={loading} />
 
       <TouchableOpacity
         activeOpacity={0.7}
@@ -87,48 +132,29 @@ export default function LoginForm() {
           // Belum ada fitur bantuan login.
         }}
       >
-        <Text style={styles.help}>
-          Mengalami kendala saat masuk?
-        </Text>
+        <Text style={styles.help}>Mengalami kendala saat masuk?</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: COLORS.white,
-    marginHorizontal: 18,
-    marginTop: -20,
-    borderRadius: 25,
-    padding: 22,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  
   welcome: {
     color: COLORS.navy,
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: "800",
   },
   description: {
     color: COLORS.muted,
     fontSize: 12,
-    marginTop: 7,
-    marginBottom: 25,
-  },
-  error: {
-    color: "#DC2626",
-    fontSize: 12,
-    marginBottom: 12,
+    lineHeight: 18,
+    marginTop: 6,
+    marginBottom: 24,
   },
   help: {
     color: COLORS.muted,
     fontSize: 11,
     textAlign: "center",
-    marginTop: 21,
+    marginTop: 20,
   },
 });
