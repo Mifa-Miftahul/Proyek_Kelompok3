@@ -266,7 +266,6 @@ import {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={COLORS.navy}
         />
 
         <View style={styles.screen}>
