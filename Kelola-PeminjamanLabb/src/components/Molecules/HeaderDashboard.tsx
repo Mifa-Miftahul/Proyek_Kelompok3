@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   View,
@@ -9,7 +10,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 type HeaderDashboardProps = {
-  onNotificationPress: () => void;
+  onLogoutPress: () => void;
+  greeting?: string;
+  schoolName?: string;
 };
 
 const COLORS = {
@@ -18,7 +21,9 @@ const COLORS = {
 };
 
 export default function HeaderDashboard({
-  onNotificationPress,
+  onLogoutPress,
+  greeting = 'Halo, Salwa Ayudia 👋🏻',
+  schoolName = 'Guru - SMK Islamic Center Cirebon',
 }: HeaderDashboardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -26,35 +31,33 @@ export default function HeaderDashboard({
     <View style={styles.header}>
       <View style={styles.headerTextWrap}>
         <Text style={styles.greeting}>
-          Halo, Salwa Ayudia 👋🏻
+          {greeting}
         </Text>
 
         <Text style={styles.schoolName}>
-          Guru - SMK Islamic Center Cirebon
+          {schoolName}
         </Text>
       </View>
 
       <Pressable
         style={[
-          styles.notificationButton,
+          styles.logoutButton,
           Platform.OS === 'web' && isHovered
-            ? styles.hoverNotification
+            ? styles.hoverLogout
             : null,
         ]}
-        onPress={onNotificationPress}
+        onPress={onLogoutPress}
         onHoverIn={() => setIsHovered(true)}
         onHoverOut={() => setIsHovered(false)}
         accessibilityRole="button"
-        accessibilityLabel="Buka notifikasi"
+        accessibilityLabel="Logout"
         hitSlop={8}
       >
         <Ionicons
-          name="notifications-outline"
+          name="log-out-outline"
           size={28}
           color={COLORS.white}
         />
-
-        <View style={styles.notificationDot} />
       </Pressable>
     </View>
   );
@@ -92,7 +95,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-  notificationButton: {
+  logoutButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
@@ -101,19 +104,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
 
-  notificationDot: {
-    position: 'absolute',
-    top: 6,
-    right: 7,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#FCA5A5',
-    borderWidth: 1,
-    borderColor: COLORS.navy,
-  },
-
-  hoverNotification: {
+  hoverLogout: {
     backgroundColor: 'rgba(255,255,255,0.15)',
   },
 });
