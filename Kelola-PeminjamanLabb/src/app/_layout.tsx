@@ -8,6 +8,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="splashscreen" />
         <Stack.Screen name="Guru/login" />
+        <Stack.Screen name="Laboran/kelola-peminjaman" />
       </Stack>
     </>
   );

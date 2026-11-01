@@ -41,10 +41,7 @@ export default function LoginLayout({ role }: LoginLayoutProps) {
       style={styles.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.navy}
-      />
+      <StatusBar barStyle="dark-content" />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, wide && styles.scrollWide]}

@@ -181,7 +181,6 @@ export default function DaftarLabScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={COLORS.navy}
       />
 
       <View style={styles.screen}>
@@ -461,7 +460,7 @@ export default function DaftarLabScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.navy,
     paddingTop:
       Platform.OS === 'android'
         ? StatusBar.currentHeight || 0
