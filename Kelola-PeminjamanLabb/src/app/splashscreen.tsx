@@ -11,7 +11,7 @@ import SplashBrand from "@/components/Organisms/SplashBrand";
 export default function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace("/Guru/login");
+      router.replace("/login" as never);
     }, 2200);
 
     return () => clearTimeout(timer);
