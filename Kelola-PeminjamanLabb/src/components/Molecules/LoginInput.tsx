@@ -23,6 +23,9 @@ type LoginInputProps = {
   onSubmitEditing?: () => void;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   autoCorrect?: boolean;
+  maxLength?: number;
+  // Pesan kesalahan validasi, tampil di bawah kolom
+  error?: string;
 };
 
 const COLORS = {
@@ -30,6 +33,8 @@ const COLORS = {
   muted: "#64748B",
   border: "#E2E8F0",
   white: "#FFFFFF",
+  red: "#DC2626",
+  paleRed: "#FFF7F7",
 };
 
 export default function LoginInput({
@@ -46,13 +51,19 @@ export default function LoginInput({
   onSubmitEditing,
   autoCapitalize = "none",
   autoCorrect,
+  maxLength,
+  error,
 }: LoginInputProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name={icon} size={20} color={COLORS.muted} />
+      <View style={[styles.inputContainer, !!error && styles.inputError]}>
+        <Ionicons
+          name={icon}
+          size={20}
+          color={error ? COLORS.red : COLORS.muted}
+        />
 
         <TextInput
           style={styles.input}
@@ -66,6 +77,7 @@ export default function LoginInput({
           keyboardType={keyboardType}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          maxLength={maxLength}
         />
 
         {secureTextEntry && onTogglePassword && (
@@ -88,6 +100,17 @@ export default function LoginInput({
           </TouchableOpacity>
         )}
       </View>
+
+      {!!error && (
+        <View style={styles.errorRow}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={14}
+            color={COLORS.red}
+          />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -95,6 +118,7 @@ export default function LoginInput({
 const styles = StyleSheet.create({
   field: {
     width: "100%",
+    marginBottom: 18,
   },
   label: {
     color: COLORS.text,
@@ -111,8 +135,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 13,
-    marginBottom: 19,
     backgroundColor: COLORS.white,
+  },
+  inputError: {
+    borderColor: COLORS.red,
+    backgroundColor: COLORS.paleRed,
   },
   input: {
     flex: 1,
@@ -124,6 +151,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     outlineStyle: "none",
   } as any,
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 7,
+  },
+  errorText: {
+    flex: 1,
+    color: COLORS.red,
+    fontSize: 11,
+  },
   eyeButton: {
     width: 32,
     height: 42,
