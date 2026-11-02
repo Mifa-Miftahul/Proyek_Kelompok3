@@ -9,6 +9,7 @@ import {
     Platform,
     Alert,
     FlatList,
+    Modal,
     ListRenderItemInfo,
     useWindowDimensions,
   } from 'react-native';
@@ -180,6 +181,13 @@ import {
 
   export default function DashboardScreen() {
     const router = useRouter();
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    const handleLogout = () => {
+      setShowLogoutModal(false);
+      router.dismissTo('/Guru/login' as never);
+    };
+    
     const { width } = useWindowDimensions();
 
     const isWideScreen = width >= 700;
@@ -258,7 +266,6 @@ import {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar
           barStyle="light-content"
-          backgroundColor={COLORS.navy}
         />
 
         <View style={styles.screen}>
@@ -268,10 +275,57 @@ import {
               isWideScreen && styles.pageWide,
             ]}
           >
-            {/* HEADER */}
+
             <HeaderDashboard
-              onNotificationPress={() => goTo('Notifikasi')}
+              onLogoutPress={() => setShowLogoutModal(true)}
             />
+
+            <Modal
+              visible={showLogoutModal}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setShowLogoutModal(false)}
+            >
+              <View style={styles.logoutOverlay}>
+                <View style={styles.logoutModal}>
+                  <View style={styles.logoutIcon}>
+                    <Ionicons
+                      name="log-out-outline"
+                      size={30}
+                      color="#223F91"
+                    />
+                  </View>
+
+                  <Text style={styles.logoutTitle}>
+                    Konfirmasi Logout
+                  </Text>
+
+                  <Text style={styles.logoutMessage}>
+                    Apakah kamu yakin ingin keluar dari akun?
+                  </Text>
+
+                  <View style={styles.logoutActions}>
+                    <Pressable
+                      style={styles.cancelButton}
+                      onPress={() => setShowLogoutModal(false)}
+                    >
+                      <Text style={styles.cancelButtonText}>
+                        Batal
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.confirmLogoutButton}
+                      onPress={handleLogout}
+                    >
+                      <Text style={styles.confirmLogoutText}>
+                        Logout
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
 
             {/* KONTEN YANG BISA DI-SCROLL */}
             <FlatList<SectionItem>
@@ -297,7 +351,7 @@ import {
               ListFooterComponent={
                 <View style={styles.listBottomSpace} />
               }
-            />
+            />            
 
             {/* BOTTOM NAVIGATION */}
             <BottomNavigation
@@ -577,5 +631,89 @@ import {
 
     hoverNavItem: {
       backgroundColor: 'rgba(255,255,255,0.12)',
+    },
+
+    logoutOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 25,
+    },
+
+    logoutModal: {
+      width: '100%',
+      maxWidth: 360,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 18,
+      padding: 24,
+      alignItems: 'center',
+      elevation: 10,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+    },
+
+    logoutIcon: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: '#DCEBFF',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+
+    logoutTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: '#223F91',
+      marginBottom: 8,
+    },
+
+    logoutMessage: {
+      fontSize: 13,
+      color: '#64748B',
+      textAlign: 'center',
+      lineHeight: 20,
+      marginBottom: 24,
+    },
+
+    logoutActions: {
+      flexDirection: 'row',
+      width: '100%',
+      gap: 12,
+    },
+
+    cancelButton: {
+      flex: 1,
+      height: 44,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: '#D1D5DB',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+
+    cancelButtonText: {
+      color: '#64748B',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+
+    confirmLogoutButton: {
+      flex: 1,
+      height: 44,
+      borderRadius: 10,
+      backgroundColor: '#223F91',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+
+    confirmLogoutText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
     },
   });

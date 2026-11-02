@@ -252,8 +252,8 @@ export default function JadwalLabScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
+
         barStyle="light-content"
-        backgroundColor={COLORS.navy}
       />
 
       {/* HEADER */}
@@ -501,7 +501,7 @@ export default function JadwalLabScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.navy,
     paddingTop:
       Platform.OS === 'android'
         ? StatusBar.currentHeight ?? 0
@@ -510,6 +510,7 @@ const styles = StyleSheet.create({
 
   scrollView: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
 
   scrollContent: {
@@ -523,6 +524,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
     paddingHorizontal: 18,
     paddingVertical: 18,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
 
   backButton: {
