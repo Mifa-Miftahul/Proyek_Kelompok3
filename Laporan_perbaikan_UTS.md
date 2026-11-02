@@ -24,7 +24,8 @@
 
 ### Hasil Halaman
 1. Login Admin
-(link)
+
+![alt text](iPhone-14-PRO-localhost-69miqcepav3zn_.gif)
 
 2. Dashboard admin
 
@@ -43,10 +44,13 @@
 link
 
 6. Kelola detail Lab
-link
+
+![alt text](iPhone-14-PRO-localhost-0p2yy1ofn9mflu.gif)
 
 7. Kelola Guru CRUD
-link
+
+![alt text](iPhone-14-PRO-localhost-p6jlhlg06rwp8f.gif)
 
 8. Logout
+
 ![alt text](Logout-guru.gif)
