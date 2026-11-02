@@ -23,10 +23,10 @@
     - peminjaman lab (guru)
 
 ### Hasil Halaman
-1. Login Admin
+1. Login Laboran
 (link)
 
-2. Dashboard admin
+2. Dashboard Laboran
 ![alt text](Dashboard-laboran.gif)
 
 3. Peminjaman lab (guru), riwayat laporan peminjaman dan kelola peminjaman lab
