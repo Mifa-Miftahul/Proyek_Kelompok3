@@ -185,7 +185,7 @@ import {
 
     const handleLogout = () => {
       setShowLogoutModal(false);
-      router.dismissTo('/Guru/login' as never);
+      router.dismissTo('../login' as never);
     };
     
     const { width } = useWindowDimensions();
