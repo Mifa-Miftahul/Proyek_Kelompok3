@@ -23,11 +23,11 @@
     - peminjaman lab (guru)
 
 ### Hasil Halaman
-1. Login Admin
+1. Login Laboran
 
 ![alt text](iPhone-14-PRO-localhost-69miqcepav3zn_.gif)
 
-2. Dashboard admin
+2. Dashboard Laboran
 
 ![alt text](Dashboard-laboran.gif)
 
