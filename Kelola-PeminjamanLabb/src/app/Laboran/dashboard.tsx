@@ -69,7 +69,7 @@ export default function DashboardLaboran() {
 
   const handleLogout = () => {
     setShowLogoutModal(false);
-    router.dismissTo('/Laboran/login' as never);
+    router.dismissTo('../login' as never);
   };
 
   const goToPeminjaman = () => {
