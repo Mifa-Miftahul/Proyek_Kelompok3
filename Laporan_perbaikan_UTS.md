@@ -27,12 +27,16 @@
 (link)
 
 2. Dashboard admin
+
 ![alt text](Dashboard-laboran.gif)
 
+
 3. Peminjaman lab (guru)
-![alt text](1000262299.gif)
+
+![alt text](1000262299.gif) 
 
 4. riwayat laporan peminjaman dan kelola peminjaman lab
+
 ![alt text](iPhone-14-PRO-localhost-v4vg_wfyngo_gc.gif)
 
 5. Kelola Jadwal
