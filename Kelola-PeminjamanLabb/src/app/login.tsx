@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { testSupabaseConnection } from "@/lib/testSupabase";
 import {
   View,
   StyleSheet,
@@ -29,8 +30,9 @@ export default function Login() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setReady(true);
-  }, []);
+  setReady(true);
+  testSupabaseConnection();
+}, []);
 
   const wide = ready && width >= 768;
 
@@ -41,7 +43,7 @@ export default function Login() {
     >
       <StatusBar
         barStyle="light-content"
-        backgroundColor={COLORS.navy}
+
       />
 
       <ScrollView
