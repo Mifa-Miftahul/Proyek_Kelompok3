@@ -19,7 +19,6 @@ type Props = {
   booking: BookingRequest;
   onDetail: (booking: BookingRequest) => void;
   onApprove: (id: string) => void;
-  onReject: (id: string) => void;
 };
 
 const formatDate = (date: string) => {
@@ -38,7 +37,6 @@ export default function BookingCard({
   booking,
   onDetail,
   onApprove,
-  onReject,
 }: Props) {
   return (
     <View style={styles.card}>
@@ -78,9 +76,9 @@ export default function BookingCard({
         {booking.status === 'Pending' && (
           <View style={styles.actionGroup}>
             <Pressable
-              style={styles.rejectButton}
-              onPress={() => onReject(booking.id)}
-            >
+  style={styles.rejectButton}
+  onPress={() => onDetail(booking)}
+>
               <Ionicons name="close" size={18} color="#DC2626" />
             </Pressable>
 

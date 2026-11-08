@@ -9,15 +9,13 @@ type Props = {
   bookings: BookingRequest[];
   onDetail: (booking: BookingRequest) => void;
   onApprove: (id: string) => void;
-  onReject: (id: string) => void;
   filter: string;
 };
 
 export default function BookingList({
   bookings,
   onDetail,
-  onApprove,
-  onReject,
+  onApprove,  
   filter,
 }: Props) {
   if (bookings.length === 0) {
@@ -40,7 +38,6 @@ export default function BookingList({
           booking={booking}
           onDetail={onDetail}
           onApprove={onApprove}
-          onReject={onReject}
         />
       ))}
     </View>

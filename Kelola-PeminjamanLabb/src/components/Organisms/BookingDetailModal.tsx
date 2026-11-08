@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   ScrollView,
   Modal,
   StyleSheet,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,7 +22,7 @@ type Props = {
   booking: BookingRequest | null;
   onClose: () => void;
   onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onReject: (id: string, reason: string) => void;
 };
 
 const formatDate = (date: string) => {
@@ -42,6 +44,29 @@ export default function BookingDetailModal({
   onApprove,
   onReject,
 }: Props) {
+
+  const [rejectionReason, setRejectionReason] = useState('');
+
+useEffect(() => {
+  if (visible) {
+    setRejectionReason('');
+  }
+}, [visible, booking?.id]);
+
+const submitRejection = () => {
+  const reason = rejectionReason.trim();
+
+  if (!reason) {
+    Alert.alert('Perhatian', 'Alasan penolakan wajib diisi.');
+    return;
+  }
+
+  if (booking) {
+    onReject(booking.id, reason);
+    setRejectionReason('');
+  }
+};
+
   return (
     <Modal
       visible={visible}
@@ -95,10 +120,25 @@ export default function BookingDetailModal({
               )}
 
               {booking.status === 'Pending' && (
+  <View style={styles.reasonContainer}>
+    <Text style={styles.label}>Alasan Penolakan</Text>
+    <TextInput
+      style={styles.reasonInput}
+      placeholder="Tuliskan alasan penolakan..."
+      placeholderTextColor="#94A3B8"
+      value={rejectionReason}
+      onChangeText={setRejectionReason}
+      multiline
+      textAlignVertical="top"
+    />
+  </View>
+)}
+
+              {booking.status === 'Pending' && (
                 <View style={styles.actions}>
                   <Pressable
                     style={styles.rejectButton}
-                    onPress={() => onReject(booking.id)}
+                    onPress={submitRejection}
                   >
                     <Text style={styles.rejectText}>Tolak</Text>
                   </Pressable>
@@ -214,4 +254,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+
+  reasonContainer: {
+  marginTop: 16,
+},
+
+reasonInput: {
+  borderWidth: 1,
+  borderColor: '#CBD5E1',
+  borderRadius: 10,
+  padding: 12,
+  minHeight: 90,
+  fontSize: 13,
+  color: '#1E293B',
+  backgroundColor: '#FFFFFF',
+},
 });
