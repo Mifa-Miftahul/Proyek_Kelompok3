@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,68 +25,15 @@ import EmptyState from '@/components/Molecules/EmptyState';
 import ResponsiveGrid from '@/components/Molecules/ResponsiveGrid';
 import { useToast } from '@/components/Molecules/Toast';
 
+import { supabase } from '../../lib/supabase';
+
 const COLORS = {
   navy: '#223F91',
-  blue: '#3B82F6',
-  paleBlue: '#DCEBFF',
   background: '#F5F7FB',
   white: '#FFFFFF',
-  text: '#1E293B',
   muted: '#64748B',
-  placeholder: '#94A3B8',
-  border: '#E2E8F0',
   divider: '#EDF1F7',
-  green: '#059669',
-  paleGreen: '#D1FAE5',
-  red: '#DC2626',
-  paleRed: '#FEE2E2',
 };
-
-
-// ==================== DATA DUMMY (tanpa database) ====================
-
-const initialLabs: Lab[] = [
-  {
-    id: 'LAB-001',
-    name: 'Lab Pemrograman',
-    laboran: 'Andi Setiawan, S.Kom.',
-    room: 'Ruang Lab 1',
-    status: 'Available',
-    icon: 'monitor',
-    perangkat: [
-      { id: 'EQP-001', nama: 'Komputer', jumlah: 30 },
-      { id: 'EQP-002', nama: 'Proyektor', jumlah: 1 },
-      { id: 'EQP-003', nama: 'Switch', jumlah: 2 },
-    ],
-  },
-  {
-    id: 'LAB-002',
-    name: 'Lab Jaringan',
-    laboran: 'Budi Santoso, S.Kom.',
-    room: 'Ruang Lab 2',
-    status: 'Occupied',
-    icon: 'lan',
-    perangkat: [
-      { id: 'EQP-004', nama: 'Komputer', jumlah: 25 },
-      { id: 'EQP-005', nama: 'Router', jumlah: 5 },
-      { id: 'EQP-006', nama: 'Switch', jumlah: 8 },
-      { id: 'EQP-007', nama: 'Access Point', jumlah: 3 },
-    ],
-  },
-  {
-    id: 'LAB-003',
-    name: 'Lab Fiber Optik',
-    laboran: 'Siti Rahmawati, S.Kom.',
-    room: 'Ruang Lab 3',
-    status: 'Available',
-    icon: 'access-point',
-    perangkat: [
-      { id: 'EQP-008', nama: 'Komputer', jumlah: 20 },
-      { id: 'EQP-009', nama: 'Perangkat Fiber Optik', jumlah: 10 },
-      { id: 'EQP-010', nama: 'Proyektor', jumlah: 1 },
-    ],
-  },
-];
 
 const CARD_SHADOW = {
   shadowColor: '#0F172A',
@@ -94,40 +42,174 @@ const CARD_SHADOW = {
   shadowRadius: 5,
   elevation: 2,
   ...Platform.select({
-    web: { boxShadow: '0px 3px 8px rgba(15, 23, 42, 0.08)' },
+    web: {
+      boxShadow: '0px 3px 8px rgba(15, 23, 42, 0.08)',
+    },
   }),
 };
 
-// Flowchart: Kelola Daftar Lab -> pilih lab -> info lab + daftar perangkat
-// -> tambah lab / edit lab / hapus lab / kelola perangkat.
 export default function KelolaDetailLabScreen() {
   const toast = useToast();
   const wide = useWindowDimensions().width >= 768;
 
-  const [labs, setLabs] = useState<Lab[]>(initialLabs);
-  const [selectedLabId, setSelectedLabId] = useState<string>(initialLabs[0].id);
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [selectedLabId, setSelectedLabId] = useState('');
 
-  // Form lab
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
   const [labFormVisible, setLabFormVisible] = useState(false);
   const [labFormMode, setLabFormMode] = useState<'add' | 'edit'>('add');
   const [deletingLab, setDeletingLab] = useState<Lab | null>(null);
 
-  // Form perangkat
   const [eqFormVisible, setEqFormVisible] = useState(false);
   const [eqFormMode, setEqFormMode] = useState<'add' | 'edit'>('add');
   const [editingEq, setEditingEq] = useState<Equipment | null>(null);
   const [deletingEq, setDeletingEq] = useState<Equipment | null>(null);
 
-  const selectedLab = labs.find((lab) => lab.id === selectedLabId) ?? labs[0];
+  const selectedLab =
+    labs.find((lab) => lab.id === selectedLabId) ?? labs[0];
+
   const totalUnits = selectedLab
-    ? selectedLab.perangkat.reduce((sum, item) => sum + item.jumlah, 0)
+    ? selectedLab.perangkat.reduce(
+        (sum, item) => sum + item.jumlah,
+        0
+      )
     : 0;
 
-  // Ubah satu lab saja (dipakai oleh aksi perangkat)
-  const changeLab = (labId: string, change: (lab: Lab) => Lab) =>
-    setLabs((prev) => prev.map((lab) => (lab.id === labId ? change(lab) : lab)));
+  // ==========================================
+  // AMBIL DATA LAB DAN PERANGKAT
+  // ==========================================
 
-  // ---------- LAB ----------
+  const fetchLabs = async () => {
+    try {
+      setLoadError(false);
+
+      const { data: labData, error: labError } = await supabase
+        .from('laboratorium')
+        .select(`
+          id_lab,
+          nama_lab,
+          laboran,
+          ruangan,
+          kapasitas,
+          status,
+          icon
+        `)
+        .order('id_lab', { ascending: true });
+
+      if (labError) throw labError;
+
+      const { data: equipmentData, error: equipmentError } =
+        await supabase
+          .from('perangkat')
+          .select(`
+            id_perangkat,
+            id_lab,
+            nama_perangkat,
+            jumlah
+          `)
+          .order('id_perangkat', { ascending: true });
+
+      if (equipmentError) throw equipmentError;
+
+      const formattedLabs: Lab[] = (labData ?? []).map((lab) => {
+        const labEquipment: Equipment[] = (
+          equipmentData ?? []
+        )
+          .filter(
+            (equipment) =>
+              String(equipment.id_lab) === String(lab.id_lab)
+          )
+          .map((equipment) => ({
+            id: String(equipment.id_perangkat),
+            nama: equipment.nama_perangkat,
+            jumlah: Number(equipment.jumlah),
+          }));
+
+        // Mendukung data lama berbahasa Inggris.
+        const normalizedStatus =
+          lab.status === 'Available'
+            ? 'Tersedia'
+            : lab.status === 'Occupied'
+              ? 'Dipakai'
+              : lab.status;
+
+        return {
+          id: String(lab.id_lab),
+          name: lab.nama_lab,
+          laboran: lab.laboran ?? '',
+          room: lab.ruangan ?? '',
+          kapasitas: Number(lab.kapasitas ?? 0),
+          status: normalizedStatus || 'Tersedia',
+          icon: lab.icon || 'monitor',
+          perangkat: labEquipment,
+        };
+      });
+
+      setLabs(formattedLabs);
+
+      setSelectedLabId((previousId) => {
+        const stillExists = formattedLabs.some(
+          (lab) => lab.id === previousId
+        );
+
+        if (stillExists) return previousId;
+
+        return formattedLabs[0]?.id ?? '';
+      });
+
+    } catch (error: any) {
+      console.error('Gagal mengambil data laboratorium:', error);
+      setLoadError(true);
+
+      toast.show(
+        error?.message ?? 'Gagal mengambil data laboratorium.'
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // REALTIME
+  // ==========================================
+
+  useEffect(() => {
+    fetchLabs();
+
+    const channel = supabase
+      .channel('kelola-lab-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'laboratorium',
+        },
+        () => fetchLabs()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'perangkat',
+        },
+        () => fetchLabs()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // ==========================================
+  // TAMBAH DAN EDIT LAB
+  // ==========================================
+
   const openAddLab = () => {
     setLabFormMode('add');
     setLabFormVisible(true);
@@ -138,32 +220,128 @@ export default function KelolaDetailLabScreen() {
     setLabFormVisible(true);
   };
 
-  const handleSubmitLab = (input: LabInput) => {
-    if (labFormMode === 'add') {
-      const created: Lab = {
-        ...input,
-        id: `LAB-${Date.now()}`,
-        icon: 'monitor',
-        perangkat: [],
-      };
-      setLabs((prev) => [...prev, created]);
-      setSelectedLabId(created.id);
-      toast.show('Lab berhasil ditambahkan');
-    } else if (selectedLab) {
-      changeLab(selectedLab.id, (lab) => ({ ...lab, ...input }));
-      toast.show('Data lab berhasil diubah');
+  const handleSubmitLab = async (input: LabInput) => {
+    try {
+      // Pastikan nilai yang dikirim ke Supabase
+      // menggunakan status bahasa Indonesia.
+      const statusIndonesia =
+        input.status === 'Tersedia'
+          ? 'Tersedia'
+          : input.status === 'Dipakai'
+            ? 'Dipakai'
+            : input.status;
+
+      if (labFormMode === 'add') {
+        const { data, error } = await supabase
+          .from('laboratorium')
+          .insert({
+            nama_lab: input.name,
+            laboran: input.laboran,
+            ruangan: input.room,
+            kapasitas: input.kapasitas,
+            status: statusIndonesia,
+            icon: 'monitor',
+          })
+          .select('id_lab')
+          .single();
+
+        if (error) throw error;
+
+        await fetchLabs();
+
+        setSelectedLabId(String(data.id_lab));
+
+        toast.show('Lab berhasil ditambahkan');
+
+      } else if (selectedLab) {
+        const { error } = await supabase
+          .from('laboratorium')
+          .update({
+            nama_lab: input.name,
+            laboran: input.laboran,
+            ruangan: input.room,
+            kapasitas: input.kapasitas,
+            status: statusIndonesia,
+          })
+          .eq('id_lab', Number(selectedLab.id));
+
+        if (error) throw error;
+
+        await fetchLabs();
+
+        toast.show('Data lab berhasil diubah');
+      }
+
+      setLabFormVisible(false);
+
+    } catch (error: any) {
+      console.error('Gagal menyimpan data lab:', error);
+
+      toast.show(
+        error?.message ?? 'Gagal menyimpan data laboratorium.'
+      );
     }
-    setLabFormVisible(false);
   };
 
-  const handleConfirmDeleteLab = () => {
+  // ==========================================
+  // HAPUS LAB
+  // ==========================================
+
+  const handleConfirmDeleteLab = async () => {
     if (!deletingLab) return;
-    setLabs((prev) => prev.filter((lab) => lab.id !== deletingLab.id));
-    setDeletingLab(null);
-    toast.show('Lab berhasil dihapus');
+
+    try {
+      const labId = Number(deletingLab.id);
+
+      const { error: equipmentError } = await supabase
+        .from('perangkat')
+        .delete()
+        .eq('id_lab', labId);
+
+      if (equipmentError) throw equipmentError;
+
+      const { error: labError } = await supabase
+        .from('laboratorium')
+        .delete()
+        .eq('id_lab', labId);
+
+      if (labError) throw labError;
+
+      const deletedId = deletingLab.id;
+
+      setLabs((previous) =>
+        previous.filter((lab) => lab.id !== deletedId)
+      );
+
+      setSelectedLabId((previousId) => {
+        if (previousId !== deletedId) return previousId;
+
+        const remainingLabs = labs.filter(
+          (lab) => lab.id !== deletedId
+        );
+
+        return remainingLabs[0]?.id ?? '';
+      });
+
+      setDeletingLab(null);
+
+      await fetchLabs();
+
+      toast.show('Lab berhasil dihapus');
+
+    } catch (error: any) {
+      console.error('Gagal menghapus lab:', error);
+
+      toast.show(
+        error?.message ?? 'Gagal menghapus laboratorium.'
+      );
+    }
   };
 
-  // ---------- PERANGKAT ----------
+  // ==========================================
+  // PERANGKAT
+  // ==========================================
+
   const openAddEquipment = () => {
     setEqFormMode('add');
     setEditingEq(null);
@@ -176,36 +354,88 @@ export default function KelolaDetailLabScreen() {
     setEqFormVisible(true);
   };
 
-  const handleSubmitEquipment = (input: EquipmentInput) => {
+  const handleSubmitEquipment = async (input: EquipmentInput) => {
     if (!selectedLab) return;
 
-    if (eqFormMode === 'add') {
-      changeLab(selectedLab.id, (lab) => ({
-        ...lab,
-        perangkat: [...lab.perangkat, { ...input, id: `EQP-${Date.now()}` }],
-      }));
-      toast.show('Perangkat berhasil ditambahkan');
-    } else if (editingEq) {
-      changeLab(selectedLab.id, (lab) => ({
-        ...lab,
-        perangkat: lab.perangkat.map((item) =>
-          item.id === editingEq.id ? { ...item, ...input } : item,
-        ),
-      }));
-      toast.show('Perangkat berhasil diubah');
+    try {
+      if (eqFormMode === 'add') {
+        const { error } = await supabase
+          .from('perangkat')
+          .insert({
+            id_lab: Number(selectedLab.id),
+            nama_perangkat: input.nama,
+            jumlah: input.jumlah,
+          });
+
+        if (error) throw error;
+
+        await fetchLabs();
+
+        toast.show('Perangkat berhasil ditambahkan');
+
+      } else if (editingEq) {
+        const { error } = await supabase
+          .from('perangkat')
+          .update({
+            nama_perangkat: input.nama,
+            jumlah: input.jumlah,
+          })
+          .eq('id_perangkat', Number(editingEq.id))
+          .eq('id_lab', Number(selectedLab.id));
+
+        if (error) throw error;
+
+        await fetchLabs();
+
+        toast.show('Perangkat berhasil diubah');
+      }
+
+      setEqFormVisible(false);
+      setEditingEq(null);
+
+    } catch (error: any) {
+      console.error('Gagal menyimpan perangkat:', error);
+
+      toast.show(
+        error?.message ?? 'Gagal menyimpan data perangkat.'
+      );
     }
-    setEqFormVisible(false);
   };
 
-  const handleConfirmDeleteEquipment = () => {
+  // ==========================================
+  // HAPUS PERANGKAT
+  // ==========================================
+
+  const handleConfirmDeleteEquipment = async () => {
     if (!selectedLab || !deletingEq) return;
-    changeLab(selectedLab.id, (lab) => ({
-      ...lab,
-      perangkat: lab.perangkat.filter((item) => item.id !== deletingEq.id),
-    }));
-    setDeletingEq(null);
-    toast.show('Perangkat berhasil dihapus');
+
+    try {
+      const { error } = await supabase
+        .from('perangkat')
+        .delete()
+        .eq('id_perangkat', Number(deletingEq.id))
+        .eq('id_lab', Number(selectedLab.id));
+
+      if (error) throw error;
+
+      setDeletingEq(null);
+
+      await fetchLabs();
+
+      toast.show('Perangkat berhasil dihapus');
+
+    } catch (error: any) {
+      console.error('Gagal menghapus perangkat:', error);
+
+      toast.show(
+        error?.message ?? 'Gagal menghapus perangkat.'
+      );
+    }
   };
+
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
     <LaboranScreenLayout
@@ -215,10 +445,12 @@ export default function KelolaDetailLabScreen() {
       activeRoute="KelolaLab"
       toastMessage={toast.message}
     >
-      {/* DAFTAR LAB */}
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeaderText}>
-          <Text style={styles.sectionTitle}>Daftar Laboratorium</Text>
+          <Text style={styles.sectionTitle}>
+            Daftar Laboratorium
+          </Text>
+
           <Text style={styles.sectionDescription}>
             Pilih lab untuk melihat dan mengelola detailnya.
           </Text>
@@ -232,7 +464,19 @@ export default function KelolaDetailLabScreen() {
         style={[styles.addButton, wide && styles.addButtonWide]}
       />
 
-      {labs.length === 0 ? (
+      {loading ? (
+        <EmptyState
+          icon="hourglass-outline"
+          title="Memuat laboratorium..."
+          description="Mohon tunggu, data laboratorium sedang diambil."
+        />
+      ) : loadError ? (
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Gagal memuat laboratorium"
+          description="Periksa koneksi atau izin akses Supabase."
+        />
+      ) : labs.length === 0 ? (
         <EmptyState
           icon="business-outline"
           title="Belum ada laboratorium"
@@ -240,26 +484,29 @@ export default function KelolaDetailLabScreen() {
         />
       ) : (
         <ResponsiveGrid minItemWidth={300}>
-        {labs.map((lab) => (
-          <LaboranLabCard
-            key={lab.id}
-            name={lab.name}
-            room={lab.room}
-            icon={lab.icon}
-            status={lab.status}
-            meta={`${lab.perangkat.length} jenis perangkat`}
-            selected={lab.id === selectedLab?.id}
-            onPress={() => setSelectedLabId(lab.id)}
-          />
-        ))}
+          {labs.map((lab) => (
+            <LaboranLabCard
+              key={lab.id}
+              name={lab.name}
+              room={lab.room}
+              icon={lab.icon}
+              status={lab.status}
+              meta={`${lab.perangkat.length} jenis perangkat`}
+              selected={lab.id === selectedLab?.id}
+              onPress={() => setSelectedLabId(lab.id)}
+            />
+          ))}
         </ResponsiveGrid>
       )}
 
-      {/* DETAIL LAB TERPILIH */}
-      {selectedLab && (
+      {/* DETAIL LAB */}
+      {selectedLab && !loading && (
         <ResponsiveGrid minItemWidth={380} maxColumns={2}>
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Informasi Laboratorium</Text>
+            <Text style={styles.cardTitle}>
+              Informasi Laboratorium
+            </Text>
+
             <View style={styles.divider} />
 
             <InfoRowDaftarLab
@@ -267,16 +514,25 @@ export default function KelolaDetailLabScreen() {
               label="Nama Lab"
               value={selectedLab.name}
             />
+
             <InfoRowDaftarLab
               icon="person-outline"
               label="Laboran Penanggung Jawab"
               value={selectedLab.laboran}
             />
+
             <InfoRowDaftarLab
               icon="location-outline"
               label="Ruang Laboratorium"
               value={selectedLab.room}
             />
+
+            <InfoRowDaftarLab
+              icon="people-outline"
+              label="Kapasitas Laboratorium"
+              value={`${selectedLab.kapasitas} Siswa`}
+            />
+
             <InfoRowDaftarLab
               icon="checkmark-circle-outline"
               label="Status Laboratorium"
@@ -291,6 +547,7 @@ export default function KelolaDetailLabScreen() {
                 onPress={openEditLab}
                 style={styles.flex}
               />
+
               <ActionButton
                 label="Hapus Lab"
                 icon="trash-outline"
@@ -301,10 +558,14 @@ export default function KelolaDetailLabScreen() {
             </View>
           </View>
 
+          {/* DAFTAR PERANGKAT */}
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionHeaderText}>
-                <Text style={styles.cardTitle}>Daftar Perangkat</Text>
+                <Text style={styles.cardTitle}>
+                  Daftar Perangkat
+                </Text>
+
                 <Text style={styles.cardSubtitle}>
                   {selectedLab.perangkat.length} jenis · {totalUnits} unit
                 </Text>
@@ -340,6 +601,7 @@ export default function KelolaDetailLabScreen() {
         </ResponsiveGrid>
       )}
 
+      {/* FORM LAB */}
       <LabFormModal
         visible={labFormVisible}
         mode={labFormMode}
@@ -349,6 +611,7 @@ export default function KelolaDetailLabScreen() {
         onSubmit={handleSubmitLab}
       />
 
+      {/* FORM PERANGKAT */}
       <EquipmentFormModal
         visible={eqFormVisible}
         mode={eqFormMode}
@@ -359,6 +622,7 @@ export default function KelolaDetailLabScreen() {
         onSubmit={handleSubmitEquipment}
       />
 
+      {/* KONFIRMASI HAPUS LAB */}
       <ConfirmDialog
         visible={!!deletingLab}
         title="Hapus Lab?"
@@ -369,6 +633,7 @@ export default function KelolaDetailLabScreen() {
         onCancel={() => setDeletingLab(null)}
       />
 
+      {/* KONFIRMASI HAPUS PERANGKAT */}
       <ConfirmDialog
         visible={!!deletingEq}
         title="Hapus Perangkat?"
@@ -382,24 +647,47 @@ export default function KelolaDetailLabScreen() {
   );
 }
 
+// ==========================================
+// STYLES
+// ==========================================
+
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'flex-start' },
-  sectionHeaderText: { flex: 1 },
+  flex: {
+    flex: 1,
+  },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  sectionHeaderText: {
+    flex: 1,
+  },
+
   sectionTitle: {
     color: COLORS.navy,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 6,
   },
+
   sectionDescription: {
     color: COLORS.muted,
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 14,
   },
-  addButton: { marginBottom: 16 },
-  addButtonWide: { alignSelf: 'flex-start', minWidth: 220 },
+
+  addButton: {
+    marginBottom: 16,
+  },
+
+  addButtonWide: {
+    alignSelf: 'flex-start',
+    minWidth: 220,
+  },
+
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
@@ -410,13 +698,32 @@ const styles = StyleSheet.create({
     borderColor: '#E8EEF8',
     ...CARD_SHADOW,
   },
-  cardTitle: { color: COLORS.navy, fontSize: 14, fontWeight: '700' },
-  cardSubtitle: { color: COLORS.muted, fontSize: 10, marginTop: 5 },
+
+  cardTitle: {
+    color: COLORS.navy,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  cardSubtitle: {
+    color: COLORS.muted,
+    fontSize: 10,
+    marginTop: 5,
+  },
+
   divider: {
     height: 1,
     backgroundColor: COLORS.divider,
     marginVertical: 15,
   },
-  labActions: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  equipmentAdd: { marginBottom: 6 },
+
+  labActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+
+  equipmentAdd: {
+    marginBottom: 6,
+  },
 });

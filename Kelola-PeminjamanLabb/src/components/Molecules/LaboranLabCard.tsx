@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -21,10 +22,10 @@ const COLORS = {
   paleRed: '#FEE2E2',
 };
 
+export type LabStatus = 'Tersedia' | 'Dipakai';
 
-export type LabStatus = 'Available' | 'Occupied';
-
-export type LabIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+export type LabIcon =
+  React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 type LaboranLabCardProps = {
   name: string;
@@ -36,7 +37,7 @@ type LaboranLabCardProps = {
   onPress: () => void;
 };
 
-// Kartu lab untuk admin. Tampilan mengikuti LabCard milik Guru.
+// Kartu lab untuk laboran.
 export default function LaboranLabCard({
   name,
   room,
@@ -57,7 +58,11 @@ export default function LaboranLabCard({
       style={[styles.card, selected && styles.selectedCard]}
     >
       <View style={[styles.iconBox, selected && styles.selectedIconBox]}>
-        <MaterialCommunityIcons name={icon} size={27} color={color} />
+        <MaterialCommunityIcons
+          name={icon}
+          size={27}
+          color={color}
+        />
       </View>
 
       <View style={styles.content}>
@@ -69,7 +74,12 @@ export default function LaboranLabCard({
         </Text>
 
         <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={14} color={mutedColor} />
+          <Ionicons
+            name="location-outline"
+            size={14}
+            color={mutedColor}
+          />
+
           <Text style={[styles.infoText, { color: mutedColor }]}>
             {room}
             {meta ? ` · ${meta}` : ''}
@@ -100,10 +110,12 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
+
   selectedCard: {
     backgroundColor: COLORS.navy,
     borderColor: COLORS.navy,
   },
+
   iconBox: {
     width: 48,
     height: 48,
@@ -112,20 +124,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.paleBlue,
   },
-  selectedIconBox: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  content: { flex: 1, minWidth: 0, alignItems: 'flex-start' },
+
+  selectedIconBox: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+
+  content: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'flex-start',
+  },
+
   name: {
     color: COLORS.text,
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 5,
   },
-  selectedName: { color: COLORS.white },
+
+  selectedName: {
+    color: COLORS.white,
+  },
+
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     marginBottom: 8,
   },
-  infoText: { fontSize: 11, flexShrink: 1 },
+
+  infoText: {
+    fontSize: 11,
+    flexShrink: 1,
+  },
 });
