@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  View,
-  StyleSheet,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
+  StyleSheet,
   useWindowDimensions,
+  View,
 } from "react-native";
 
 import LoginHeader from "@/components/Molecules/LoginHeader";
@@ -55,7 +55,7 @@ export default function LoginLayout({ role }: LoginLayoutProps) {
 
           {/* Satu-satunya kartu pada halaman login */}
           <View style={styles.card}>
-            <LoginForm role={role} />
+            <LoginForm />
           </View>
         </View>
       </ScrollView>
