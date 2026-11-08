@@ -1,63 +1,30 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
-import LoginInput from "../Molecules/LoginInput";
+import { supabase } from "../../lib/supabase";
 import LoginButton from "../Molecules/LoginButton";
+import LoginInput from "../Molecules/LoginInput";
 
 const COLORS = {
   navy: "#1E3A8A",
-  paleBlue: "#DBEAFE",
   muted: "#64748B",
-  text: "#1E293B",
-  border: "#E2E8F0",
-  soft: "#F8FAFC",
   red: "#DC2626",
   paleRed: "#FEF2F2",
   redBorder: "#FECACA",
 };
 
-type Role = "Guru" | "Laboran";
-
-type Account = {
-  role: Role;
-  nama: string;
-  nip: string;
-  password: string;
-};
-
-// Akun dummy untuk demo (belum ada database).
-// Nanti bagian ini diganti dengan pengecekan ke server.
-const DEMO_ACCOUNTS: Account[] = [
-  {
-    role: "Guru",
-    nama: "Salwa Ayudia",
-    nip: "24880100",
-    password: "guru123",
-  },
-  {
-    role: "Laboran",
-    nama: "Andi Setiawan",
-    nip: "2488010040",
-    password: "laboran123",
-  },
-];
-
-// Halaman awal tiap peran setelah login berhasil.
-const HOME_ROUTE: Record<Role, string> = {
-  Guru: "/Guru/dashboard",
-  Laboran: "/Laboran/dashboard",
-};
+type Role = "guru" | "laboran";
 
 type Errors = {
   nip?: string;
   password?: string;
+};
+
+const HOME_ROUTE: Record<Role, string> = {
+  guru: "/Guru/dashboard",
+  laboran: "/Laboran/dashboard",
 };
 
 export default function LoginForm() {
@@ -67,15 +34,7 @@ export default function LoginForm() {
   const [errors, setErrors] = useState<Errors>({});
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, []);
-
-  // Validasi format isian
   const validate = () => {
     const next: Errors = {};
 
@@ -95,36 +54,68 @@ export default function LoginForm() {
     return Object.keys(next).length === 0;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (loading) return;
 
     setLoginError("");
+
     if (!validate()) return;
 
     setLoading(true);
 
-    // "Login berhasil?" pada flowchart. Cabang Tidak: tetap di halaman login.
-    timer.current = setTimeout(() => {
-      const account = DEMO_ACCOUNTS.find(
-        (item) => item.nip === nip && item.password === password,
-      );
+    try {
+      // Konversi NIP menjadi email internal Supabase.
+      const email = `${nip}@silakom.id`;
 
-      if (!account) {
-        setLoading(false);
-        setLoginError("NIP atau password salah. Periksa kembali lalu coba lagi.");
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      if (authError || !authData.user) {
+        setLoginError(
+          "NIP atau password salah. Periksa kembali lalu coba lagi.",
+        );
         return;
       }
 
-      router.replace(HOME_ROUTE[account.role] as never);
-    }, 700);
-  };
+      // Ambil profil pengguna berdasarkan UUID dari Supabase Auth.
+      const { data: profile, error: profileError } = await supabase
+        .from("users")
+        .select("id, nama, nip, role, is_active")
+        .eq("id", authData.user.id)
+        .single();
 
-  // Isi otomatis dari akun demo
-  const fillDemo = (account: Account) => {
-    setNip(account.nip);
-    setPassword(account.password);
-    setErrors({});
-    setLoginError("");
+      if (profileError || !profile) {
+        await supabase.auth.signOut();
+        setLoginError("Profil pengguna tidak ditemukan.");
+        return;
+      }
+
+      // Tolak akun yang sudah dinonaktifkan.
+      if (!profile.is_active) {
+        await supabase.auth.signOut();
+        setLoginError("Akun kamu sudah dinonaktifkan. Hubungi Laboran.");
+        return;
+      }
+
+      // Pastikan role sesuai dengan role yang tersedia.
+      const role = profile.role as Role;
+
+      if (role !== "guru" && role !== "laboran") {
+        await supabase.auth.signOut();
+        setLoginError("Role akun tidak valid.");
+        return;
+      }
+
+      router.replace(HOME_ROUTE[role] as never);
+    } catch (error) {
+      console.error("Login error:", error);
+      setLoginError("Terjadi kesalahan koneksi. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -132,7 +123,8 @@ export default function LoginForm() {
       <Text style={styles.welcome}>Selamat Datang!</Text>
 
       <Text style={styles.description}>
-        Masuk dengan NIP dan password kamu untuk melanjutkan ke aplikasi SILAKOM.
+        Masuk dengan NIP dan password kamu untuk melanjutkan ke aplikasi
+        SILAKOM.
       </Text>
 
       <LoginInput
@@ -140,10 +132,11 @@ export default function LoginForm() {
         placeholder="Masukkan NIP"
         value={nip}
         onChangeText={(value) => {
-          // NIP hanya angka
           setNip(value.replace(/\D/g, ""));
           setLoginError("");
-          if (errors.nip) setErrors((prev) => ({ ...prev, nip: undefined }));
+          if (errors.nip) {
+            setErrors((prev) => ({ ...prev, nip: undefined }));
+          }
         }}
         icon="card-outline"
         keyboardType="number-pad"
@@ -180,7 +173,6 @@ export default function LoginForm() {
       )}
 
       <LoginButton onPress={handleLogin} loading={loading} />
-
     </View>
   );
 }
@@ -214,57 +206,5 @@ const styles = StyleSheet.create({
     color: COLORS.red,
     fontSize: 12,
     lineHeight: 17,
-  },
-  demoBox: {
-    backgroundColor: COLORS.soft,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 22,
-  },
-  demoTitle: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  demoSubtitle: {
-    color: COLORS.muted,
-    fontSize: 11,
-    marginTop: 3,
-    marginBottom: 10,
-  },
-  demoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 10,
-    marginTop: 8,
-  },
-  roleBadge: {
-    backgroundColor: COLORS.paleBlue,
-    borderRadius: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-  },
-  roleBadgeText: {
-    color: COLORS.navy,
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  demoInfo: { flex: 1, minWidth: 0 },
-  demoName: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  demoCredential: {
-    color: COLORS.muted,
-    fontSize: 10,
-    marginTop: 2,
   },
 });

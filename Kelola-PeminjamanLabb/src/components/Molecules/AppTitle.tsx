@@ -1,4 +1,4 @@
-import { Text, StyleSheet } from "react-native";
+import { StyleSheet, Text } from "react-native";
 
 export default function AppTitle() {
   return <Text style={styles.title}>SILAKOM</Text>;
