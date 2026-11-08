@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -11,8 +11,9 @@ import {
 import {
   BookingRequest,
   BookingStatus,
-  INITIAL_BOOKINGS,
 } from '../../constants/bookingData';
+
+import { supabase } from '../../lib/supabase';
 
 import HistorySummary from '../../components/Organisms/HistorySummary';
 import HistoryList from '../../components/Organisms/HistoryList';
@@ -23,7 +24,74 @@ import BookingHeader from '@/components/Organisms/BookingHeader';
 type HistoryFilter = 'Semua' | BookingStatus;
 
 export default function RiwayatLabScreen() {
-  const [bookings] = useState<BookingRequest[]>(INITIAL_BOOKINGS);
+  const [bookings, setBookings] = useState<BookingRequest[]>([]);
+const [loading, setLoading] = useState(true);
+const [errorMessage, setErrorMessage] = useState('');
+
+
+// Mengambil data riwayat dari Supabase
+const fetchBookings = async () => {
+  try {
+    setLoading(true);
+    setErrorMessage('');
+
+    const { data: userData, error: userError } =
+      await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error('Sesi login tidak ditemukan. Silakan login kembali.');
+    }
+
+    const { data, error } = await supabase
+      .from('peminjaman')
+      .select(`
+        *,
+        users!fk_peminjaman_guru (
+          nama,
+          nip
+        ),
+        laboratorium!fk_peminjaman_laboratorium (
+          nama_lab,
+          ruangan
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const formattedBookings: BookingRequest[] = (data || []).map(
+      (item: any) => ({
+        id: String(item.id_peminjaman),
+        teacherName: item.users?.nama || 'Nama Guru tidak tersedia',
+        labName: item.laboratorium?.nama_lab || 'Laboratorium tidak tersedia',
+        labId: String(item.id_lab),
+        date: item.tanggal,
+        startTime: item.jam_mulai?.slice(0, 5) || '',
+        endTime: item.jam_selesai?.slice(0, 5) || '',
+        className: item.kelas,
+        subject: item.mata_pelajaran,
+        studentCount: item.jumlah_siswa,
+        purpose: item.keperluan,
+        status: item.status as BookingStatus,
+        rejectionReason: item.alasan_penolakan || undefined,
+      })
+    );
+
+    setBookings(formattedBookings);
+  } catch (error: any) {
+    console.error('Gagal mengambil riwayat peminjaman:', error);
+    setErrorMessage(
+      error.message || 'Gagal mengambil riwayat peminjaman.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Panggil ketika halaman dibuka
+useEffect(() => {
+  fetchBookings();
+}, []);
   const [filter, setFilter] = useState<HistoryFilter>('Semua');
   const [selectedBooking, setSelectedBooking] =
     useState<BookingRequest | null>(null);
@@ -56,14 +124,26 @@ export default function RiwayatLabScreen() {
   </Text>
 </View>
 
-          <HistorySummary bookings={bookings} />
+          {loading ? (
+  <Text style={styles.description}>
+    Sedang mengambil data riwayat...
+  </Text>
+) : errorMessage ? (
+  <Text style={{ color: 'red', marginVertical: 16 }}>
+    {errorMessage}
+  </Text>
+) : (
+  <>
+    <HistorySummary bookings={bookings} />
 
-          <HistoryList
-            bookings={filteredBookings}
-            filter={filter}
-            onFilterChange={setFilter}
-            onSelect={setSelectedBooking}
-          />
+    <HistoryList
+      bookings={filteredBookings}
+      filter={filter}
+      onFilterChange={setFilter}
+      onSelect={setSelectedBooking}
+    />
+  </>
+)}
         </ScrollView>
 
         <LaboranBottomNavigation activeRoute="Riwayat" />
