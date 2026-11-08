@@ -9,14 +9,14 @@ const COLORS = {
   paleRed: '#FEE2E2',
 };
 
-type LabStatus = 'Available' | 'Occupied';
+type LabStatus = 'Tersedia' | 'Dipakai';
 
 type StatusBadgeProps = {
   status: LabStatus;
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
-  const isAvailable = status === 'Available';
+  const isAvailable = status === 'Tersedia';
 
   return (
     <View
