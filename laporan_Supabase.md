@@ -20,27 +20,30 @@
 ![alt text](<skema tabel.png>)
 
 ## Halaman yang sudah terkoneksi
-1. konfirmasi peminjaman lab (Laboran)
+1. Login(Laboran)
 
-![alt text](Screenrecorder-2026-11-09-05-29-30-844.gif)
+![alt text](Login_laboran-1.gif)
 
-2. laporan peminjaman lab (Laboran)
+2. Dashboard (Laboran)
 
-![alt text](Screenrecorder-2026-11-09-05-30-02-36.gif)
+![alt text](dashboard-laboran-db-1.gif)
 
+3. Kelola Lab (Laboran)
 
-3. kelola perangkat lab (Laboran)
+![alt text](Kelola-laboratorium.gif)
 
-![alt text](kelola-lab.gif)
+4. Kelola perangkat Lab (Laboran)
 
-4. Login
+![alt text](<kelola perangkat-lab.gif>)
 
-![alt text](Login_laboran.gif)
+5. Kelola akun guru (Laboran)
 
-5. Dashboard (Laboran)
+![alt text](<kelola akun guru-1.gif>)
 
-![alt text](dashboard-laboran-db.gif)
+6. Konfirmasi peminjaman lab (Laboran)
 
-6. Kelola akun Guru
+![alt text](Screenrecorder-2026-11-09-05-29-30-844-1.gif)
 
-![alt text](<kelola akun guru.gif>)
+7. laporan peminjaman lab (Laboran)
+
+![alt text](Screenrecorder-2026-11-09-05-30-02-36-1.gif)
