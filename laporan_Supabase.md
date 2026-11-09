@@ -17,7 +17,7 @@
 
 3. Skema Tabel Supabase
 
-![alt text](skema_tabel.png)
+![alt text](<skema tabel.png>)
 
 ## Halaman yang sudah terkoneksi
 1. konfirmasi peminjaman lab (Laboran)
