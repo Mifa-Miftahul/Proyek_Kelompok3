@@ -40,3 +40,7 @@
 5. Dashboard (Laboran)
 
 ![alt text](dashboard-laboran-db.gif)
+
+6. Kelola akun Guru
+
+![alt text](<kelola akun guru.gif>)
