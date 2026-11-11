@@ -16,35 +16,29 @@ type HeaderDashboardProps = {
 };
 
 const COLORS = {
-  navy: '#223F91',
-  white: '#FFFFFF',
+  navy: "#223F91",
+  white: "#FFFFFF",
 };
 
 export default function HeaderDashboard({
   onLogoutPress,
-  greeting = 'Halo, Salwa Ayudia 👋🏻',
-  schoolName = 'Guru - SMK Islamic Center Cirebon',
+  greeting = "Halo, Salwa Ayudia 👋🏻",
+  schoolName = "Guru - SMK Islamic Center Cirebon",
 }: HeaderDashboardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <View style={styles.header}>
       <View style={styles.headerTextWrap}>
-        <Text style={styles.greeting}>
-          {greeting}
-        </Text>
+        <Text style={styles.greeting}>{greeting}</Text>
 
-        <Text style={styles.schoolName}>
-          {schoolName}
-        </Text>
+        <Text style={styles.schoolName}>{schoolName}</Text>
       </View>
 
       <Pressable
         style={[
           styles.logoutButton,
-          Platform.OS === 'web' && isHovered
-            ? styles.hoverLogout
-            : null,
+          Platform.OS === "web" && isHovered ? styles.hoverLogout : null,
         ]}
         onPress={onLogoutPress}
         onHoverIn={() => setIsHovered(true)}
@@ -53,11 +47,7 @@ export default function HeaderDashboard({
         accessibilityLabel="Logout"
         hitSlop={8}
       >
-        <Ionicons
-          name="log-out-outline"
-          size={28}
-          color={COLORS.white}
-        />
+        <Ionicons name="log-out-outline" size={28} color={COLORS.white} />
       </Pressable>
     </View>
   );
@@ -72,9 +62,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   headerTextWrap: {
@@ -85,26 +75,26 @@ const styles = StyleSheet.create({
   greeting: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
 
   schoolName: {
-    color: '#E0E7FF',
+    color: "#E0E7FF",
     fontSize: 10,
-    fontWeight: '400',
+    fontWeight: "400",
   },
 
   logoutButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
     borderRadius: 20,
   },
 
   hoverLogout: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
 });
