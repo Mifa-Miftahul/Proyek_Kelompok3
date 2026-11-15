@@ -59,6 +59,7 @@ function validateBooking(data: BookingFormData): BookingErrors {
   } else {
     const [year, month, day] = data.date.split('-').map(Number);
     const selectedDate = new Date(year, month - 1, day);
+
     const validDate =
       selectedDate.getFullYear() === year &&
       selectedDate.getMonth() === month - 1 &&
@@ -223,9 +224,8 @@ export default function BookingForm({ onSubmit }: Props) {
     try {
       setSubmitting(true);
       await onSubmit(formData);
-    } catch (error) {
-      // Error sudah ditangani oleh fungsi onSubmit di halaman peminjaman.
-      console.error('Pengiriman pengajuan gagal:', error);
+    } catch {
+      // Error sudah ditangani dan ditampilkan oleh halaman peminjaman.
     } finally {
       setSubmitting(false);
     }

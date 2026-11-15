@@ -1,7 +1,6 @@
 
 import React from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   View,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import HeaderDashboard from '../../components/Molecules/HeaderDashboard';
@@ -50,12 +50,15 @@ export default function Peminjaman() {
 
   const handleSubmit = async (data: BookingFormData) => {
     try {
-      // Pastikan laboratorium sudah dipilih.
       if (!data.lab) {
-        Alert.alert(
-          'Peringatan',
-          'Pilih laboratorium terlebih dahulu.',
-        );
+        if (Platform.OS === 'web') {
+          window.alert('Peringatan\n\nPilih laboratorium terlebih dahulu.');
+        } else {
+          Alert.alert(
+            'Peringatan',
+            'Pilih laboratorium terlebih dahulu.',
+          );
+        }
         return;
       }
 
@@ -66,10 +69,15 @@ export default function Peminjaman() {
       } = await supabase.auth.getSession();
 
       if (sessionError || !session?.user) {
-        Alert.alert(
-          'Sesi Login Berakhir',
-          'Silakan login kembali menggunakan akun guru.',
-        );
+        const title = 'Sesi Login Berakhir';
+        const description =
+          'Silakan login kembali menggunakan akun guru.';
+
+        if (Platform.OS === 'web') {
+          window.alert(`${title}\n\n${description}`);
+        } else {
+          Alert.alert(title, description);
+        }
         return;
       }
 
@@ -89,13 +97,12 @@ export default function Peminjaman() {
       );
 
       if (error) {
-        console.error('Supabase booking error:', error);
         throw error;
       }
 
+      // Pengajuan berhasil.
       console.log('Pengajuan berhasil disimpan:', bookingId);
 
-      // Tampilkan notifikasi sesuai platform.
       const successMessage =
         `Pengajuan peminjaman laboratorium berhasil dikirim.\n\n` +
         `Nomor Pengajuan: ${bookingId}\n` +
@@ -103,10 +110,7 @@ export default function Peminjaman() {
         `Silakan menunggu persetujuan laboran.`;
 
       if (Platform.OS === 'web') {
-        window.alert(
-          `Pengajuan Berhasil!\n\n${successMessage}`,
-        );
-
+        window.alert(`Pengajuan Berhasil!\n\n${successMessage}`);
         router.replace('/Guru/dashboard' as any);
       } else {
         Alert.alert(
@@ -124,11 +128,9 @@ export default function Peminjaman() {
         );
       }
     } catch (error: any) {
-      console.error('Booking submission error:', error);
-
+      // Tangani error agar pengguna mendapatkan notifikasi yang sesuai.
       const message = error?.message ?? '';
 
-      // Penanganan error berdasarkan pesan dari database.
       let title = 'Pengajuan Gagal';
       let description =
         'Pengajuan belum berhasil disimpan. Silakan coba kembali.';
@@ -136,9 +138,12 @@ export default function Peminjaman() {
       if (message.includes('Jadwal laboratorium sudah terisi')) {
         title = 'Jadwal Tidak Tersedia';
         description =
-          'Laboratorium sudah memiliki pengajuan pada rentang waktu tersebut. Silakan pilih waktu lain.';
+          'Jadwal laboratorium yang kamu pilih sudah digunakan. Silakan pilih tanggal atau jam lainnya.';
       } else if (message.includes('Kapasitas laboratorium')) {
         title = 'Kapasitas Terlampaui';
+        description = message;
+      } else if (message.includes('Jumlah siswa')) {
+        title = 'Jumlah Siswa Tidak Valid';
         description = message;
       } else if (message.includes('Laboratorium tidak ditemukan')) {
         title = 'Laboratorium Tidak Ditemukan';
@@ -157,8 +162,8 @@ export default function Peminjaman() {
       } else if (message.includes('Jam selesai harus setelah jam mulai')) {
         title = 'Waktu Tidak Valid';
         description = message;
-      } else if (message.includes('Jumlah siswa')) {
-        title = 'Jumlah Siswa Tidak Valid';
+      } else if (message.includes('Semua informasi peminjaman wajib diisi')) {
+        title = 'Formulir Belum Lengkap';
         description = message;
       }
 
@@ -168,45 +173,45 @@ export default function Peminjaman() {
         Alert.alert(title, description);
       }
 
-      throw error;
+      // Tidak melempar error lagi karena sudah ditangani di sini.
     }
   };
 
   // ==================== RENDER ====================
 
   return (
-  <SafeAreaView style={styles.safeArea}>
-    <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
 
-    <View style={styles.container}>
-      <HeaderDashboard
-        onLogoutPress={async () => {
-          await supabase.auth.signOut();
-          router.replace('/' as any);
-        }}
-      />
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <PageTitle
-          title="Buat Peminjaman"
-          description="Ajukan penggunaan laboratorium untuk kegiatan praktikum."
+      <View style={styles.container}>
+        <HeaderDashboard
+          onLogoutPress={async () => {
+            await supabase.auth.signOut();
+            router.replace('/' as any);
+          }}
         />
 
-        <InfoNotice />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <PageTitle
+            title="Buat Peminjaman"
+            description="Ajukan penggunaan laboratorium untuk kegiatan praktikum."
+          />
 
-        <BookingForm onSubmit={handleSubmit} />
-      </ScrollView>
+          <InfoNotice />
 
-      <BottomNavigation
-        activeRoute="BuatPeminjaman"
-        onNavigate={handleNavigate}
-      />
-    </View>
-  </SafeAreaView>
-);
+          <BookingForm onSubmit={handleSubmit} />
+        </ScrollView>
+
+        <BottomNavigation
+          activeRoute="BuatPeminjaman"
+          onNavigate={handleNavigate}
+        />
+      </View>
+    </SafeAreaView>
+  );
 }
 
 // ==================== STYLES ====================
@@ -215,7 +220,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: Platform.OS === 'android' ? 0 : 0,
   },
   container: {
     flex: 1,
