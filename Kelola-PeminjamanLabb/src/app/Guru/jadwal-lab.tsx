@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import LabSelector from '../../components/Organisms/LabSelector';
 import ScheduleList from '../../components/Organisms/ScheduleList';
 import BottomNavigation from '../../components/Organisms/BottomNavigation';
+import { supabase } from '../../lib/supabase';
 
 // ==========================================
 // WARNA APLIKASI
@@ -43,14 +44,14 @@ const COLORS = {
 // TIPE DATA TYPESCRIPT
 // ==========================================
 
-type LabId = 'LAB-001' | 'LAB-002' | 'LAB-003';
+type LabId = string;
 
 type LabIcon = 'monitor' | 'lan' | 'access-point';
 
 type LabStatus = 'Berlangsung' | 'Terjadwal';
 
 type Laboratory = {
-  id: LabId;
+  id: string;
   name: string;
   location: string;
   room: string;
@@ -74,7 +75,7 @@ type LabSchedule = {
 // DATA LABORATORIUM
 // ==========================================
 
-const laboratories: Laboratory[] = [
+const initialLaboratories: Laboratory[] = [
   {
     id: 'LAB-001',
     name: 'Lab Pemrograman',
@@ -106,144 +107,138 @@ const laboratories: Laboratory[] = [
 ];
 
 // ==========================================
-// DATA JADWAL LABORATORIUM
-// ==========================================
-
-const labSchedules: Record<LabId, LabSchedule[]> = {
-  'LAB-001': [
-    {
-      id: 'JAD-001',
-      day: 'Senin',
-      date: '19 Oktober 2026',
-      time: '07.30 - 10.00',
-      subject: 'Praktikum Pemrograman',
-      teacher: 'Salwa Ayudia',
-      className: 'X RPL 1',
-      status: 'Berlangsung',
-    },
-    {
-      id: 'JAD-002',
-      day: 'Senin',
-      date: '19 Oktober 2026',
-      time: '10.00 - 12.30',
-      subject: 'Pemrograman Web',
-      teacher: 'Bapak Andi',
-      className: 'X RPL 2',
-      status: 'Terjadwal',
-    },
-    {
-      id: 'JAD-003',
-      day: 'Senin',
-      date: '19 Oktober 2026',
-      time: '12.30 - 15.30',
-      subject: 'Praktikum Basis Data',
-      teacher: 'Ibu Rina',
-      className: 'XI RPL 1',
-      status: 'Terjadwal',
-    },
-    {
-      id: 'JAD-004',
-      day: 'Selasa',
-      date: '20 Oktober 2026',
-      time: '07.30 - 10.00',
-      subject: 'Pemrograman Dasar',
-      teacher: 'Salwa Ayudia',
-      className: 'X RPL 1',
-      status: 'Terjadwal',
-    },
-  ],
-
-  'LAB-002': [
-    {
-      id: 'JAD-005',
-      day: 'Senin',
-      date: '19 Oktober 2026',
-      time: '07.30 - 10.00',
-      subject: 'Jaringan Komputer',
-      teacher: 'Bapak Budi',
-      className: 'XI TKJ 1',
-      status: 'Terjadwal',
-    },
-    {
-      id: 'JAD-006',
-      day: 'Rabu',
-      date: '21 Oktober 2026',
-      time: '10.00 - 12.30',
-      subject: 'Administrasi Jaringan',
-      teacher: 'Ibu Rina',
-      className: 'XI TKJ 2',
-      status: 'Terjadwal',
-    },
-    {
-      id: 'JAD-007',
-      day: 'Kamis',
-      date: '22 Oktober 2026',
-      time: '07.30 - 10.00',
-      subject: 'Praktikum Router',
-      teacher: 'Bapak Budi',
-      className: 'XII TKJ 1',
-      status: 'Terjadwal',
-    },
-  ],
-
-  'LAB-003': [
-    {
-      id: 'JAD-008',
-      day: 'Selasa',
-      date: '20 Oktober 2026',
-      time: '10.00 - 12.30',
-      subject: 'Praktikum Fiber Optik',
-      teacher: 'Bapak Andi',
-      className: 'XII TKJ 1',
-      status: 'Terjadwal',
-    },
-    {
-      id: 'JAD-009',
-      day: 'Jumat',
-      date: '23 Oktober 2026',
-      time: '07.30 - 10.00',
-      subject: 'Instalasi Kabel Optik',
-      teacher: 'Ibu Rina',
-      className: 'XII TKJ 2',
-      status: 'Terjadwal',
-    },
-  ],
-};
-
-// ==========================================
 // KOMPONEN UTAMA
 // ==========================================
 
 export default function JadwalLabScreen() {
   const router = useRouter();
 
-  const [selectedLab, setSelectedLab] =
-    useState<Laboratory>(laboratories[0]);
+  
+const [laboratories, setLaboratories] = useState<Laboratory[]>(initialLaboratories);
 
-  const [selectedDay, setSelectedDay] =
-    useState<string>('Semua');
+const [selectedLab, setSelectedLab] = useState<Laboratory>(initialLaboratories[0]);
 
-  const days = [
-    'Semua',
-    'Senin',
-    'Selasa',
-    'Rabu',
-    'Kamis',
-    'Jumat',
-  ];
+const [labSchedules, setLabSchedules] = useState<Record<string, LabSchedule[]>>({});
 
-  const currentSchedules = labSchedules[selectedLab.id];
+const [selectedDay, setSelectedDay] = useState<string>('Semua');
 
-  const filteredSchedules =
-    selectedDay === 'Semua'
-      ? currentSchedules
-      : currentSchedules.filter(
-          (schedule) => schedule.day === selectedDay
-        );
+// AMBIL DATA LABORATORIUM
+useEffect(() => {
+  const fetchLaboratories = async () => {
+    const { data, error } = await supabase
+      .from('laboratorium')
+      .select('id_lab, nama_lab, ruangan, kapasitas, icon, deskripsi')
+      .order('id_lab', { ascending: true });
 
-  const ongoingCount = filteredSchedules.filter(
-    (schedule) => schedule.status === 'Berlangsung'
-  ).length;
+    if (error) {
+      console.error('Gagal mengambil data laboratorium:', error.message);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const mappedLabs: Laboratory[] = data.map((item) => ({
+        id: String(item.id_lab),
+        name: item.nama_lab,
+        location: '',
+        room: item.ruangan,
+        capacity: item.kapasitas,
+        icon: ['monitor', 'lan', 'access-point'].includes(item.icon)
+          ? (item.icon as LabIcon)
+          : 'monitor',
+        description: item.deskripsi ?? '',
+      }));
+
+      setLaboratories(mappedLabs);
+      setSelectedLab(mappedLabs[0]);
+    }
+  };
+
+  fetchLaboratories();
+}, []);
+
+// AMBIL DATA JADWAL BERDASARKAN LAB YANG DIPILIH
+useEffect(() => {
+  const labId = Number(selectedLab?.id);
+
+  // Jangan query jika ID masih berupa data dummy
+  if (!Number.isFinite(labId)) return;
+
+  const fetchSchedules = async () => {
+    const { data, error } = await supabase
+      .from('jadwal_lab')
+      .select(`
+        id_jadwal,
+        id_lab,
+        hari,
+        tanggal,
+        jam_mulai,
+        jam_selesai,
+        mata_pelajaran,
+        nama_guru,
+        kelas,
+        status
+      `)
+      .eq('id_lab', labId)
+      .order('tanggal', { ascending: true })
+      .order('jam_mulai', { ascending: true });
+
+    if (error) {
+      console.error('Gagal mengambil jadwal:', error.message);
+      return;
+    }
+
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April',
+      'Mei', 'Juni', 'Juli', 'Agustus',
+      'September', 'Oktober', 'November', 'Desember',
+    ];
+
+    const mappedSchedules: LabSchedule[] = (data ?? []).map((item) => {
+      const [year, month, day] = item.tanggal.split('-');
+
+      return {
+        id: String(item.id_jadwal),
+        day: item.hari,
+        date: `${Number(day)} ${months[Number(month) - 1]} ${year}`,
+        time: `${item.jam_mulai.slice(0, 5).replace(':', '.')} - ${item.jam_selesai.slice(0, 5).replace(':', '.')}`,
+        subject: item.mata_pelajaran,
+        teacher: item.nama_guru,
+        className: item.kelas,
+        status: item.status as LabStatus,
+      };
+    });
+
+    setLabSchedules((prev) => ({
+      ...prev,
+      [selectedLab.id]: mappedSchedules,
+    }));
+  };
+
+  fetchSchedules();
+}, [selectedLab.id]);
+
+const days = [
+  'Semua',
+  'Senin',
+  'Selasa',
+  'Rabu',
+  'Kamis',
+  'Jumat',
+];
+
+const currentSchedules = labSchedules[selectedLab.id] ?? [];
+
+const filteredSchedules =
+  selectedDay === 'Semua'
+    ? currentSchedules
+    : currentSchedules.filter(
+        (schedule) => schedule.day === selectedDay
+      );
+
+const ongoingCount = filteredSchedules.filter(
+  (schedule) => schedule.status === 'Berlangsung'
+).length;
+
 
   const navigateTo = (path: string) => {
     router.push(path as never);

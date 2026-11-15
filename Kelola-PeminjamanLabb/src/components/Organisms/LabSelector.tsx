@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import LabCard from '../Molecules/LabCard';
 
 type Lab = {
-  id: 'LAB-001' | 'LAB-002' | 'LAB-003';
+  id: string;
   name: string;
   location: string;
   room: string;
