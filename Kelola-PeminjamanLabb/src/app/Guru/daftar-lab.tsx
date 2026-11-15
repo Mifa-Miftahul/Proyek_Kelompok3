@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -16,6 +17,7 @@ import BottomNavigation from '../../components/Organisms/BottomNavigation';
 import InfoRowDaftarLab from '../../components/Molecules/InfoRowDaftarLab';
 import HeaderDaftarLab from '../../components/Molecules/HeaderDaftarLab';
 import InfoLab from '../../components/Organisms/InfoLab';
+import { supabase } from '../../lib/supabase';
 
 const COLORS = {
   navy: '#223F91',
@@ -51,6 +53,21 @@ type Lab = {
   status: LabStatus;
 };
 
+type LabDatabase = {
+  id_lab: number;
+  nama_lab: string;
+  ruangan: string;
+  icon: string;
+  deskripsi: string | null;
+  laboran: string;
+  status: string;
+  perangkat: {
+    id_perangkat: number;
+    nama_perangkat: string;
+    jumlah: number;
+  }[];
+};
+
 type LabCardProps = {
   lab: Lab;
   onPress: () => void;
@@ -61,56 +78,6 @@ type NavigationRoute =
   | 'JadwalLab'
   | 'DaftarLab'
   | 'BuatPeminjaman';
-
-const LABS: Lab[] = [
-  {
-    id: 'LAB-001',
-    name: 'Lab Pemrograman',
-    location: 'Gedung Informatika',
-    room: 'Ruang Lab 1',
-    icon: 'monitor',
-    description:
-      'Laboratorium untuk praktikum pemrograman dan pengembangan aplikasi.',
-    laboran: 'Andi Setiawan, S.Kom.',
-    perangkat: [
-      { nama: 'Komputer', jumlah: 30 },
-      { nama: 'Proyektor', jumlah: 1 },
-      { nama: 'Switch', jumlah: 2 },
-    ],
-    status: 'Available',
-  },
-  {
-    id: 'LAB-002',
-    name: 'Lab Jaringan',
-    location: 'Gedung Teknik',
-    room: 'Ruang Lab 2',
-    icon: 'lan',
-    description: 'Laboratorium untuk praktikum jaringan komputer.',
-    laboran: 'Budi Santoso, S.Kom.',
-    perangkat: [
-      { nama: 'Komputer', jumlah: 25 },
-      { nama: 'Router', jumlah: 5 },
-      { nama: 'Switch', jumlah: 8 },
-      { nama: 'Access Point', jumlah: 3 },
-    ],
-    status: 'Occupied',
-  },
-  {
-    id: 'LAB-003',
-    name: 'Lab Fiber Optik',
-    location: 'Gedung Informatika',
-    room: 'Ruang Lab 3',
-    icon: 'access-point',
-    description: 'Laboratorium untuk praktikum jaringan fiber optik.',
-    laboran: 'Siti Rahmawati, S.Kom.',
-    perangkat: [
-      { nama: 'Komputer', jumlah: 20 },
-      { nama: 'Perangkat Fiber Optik', jumlah: 10 },
-      { nama: 'Proyektor', jumlah: 1 },
-    ],
-    status: 'Available',
-  },
-];
 
 function LabCard({ lab, onPress }: LabCardProps) {
   const totalDevices = lab.perangkat.reduce(
@@ -150,7 +117,10 @@ function LabCard({ lab, onPress }: LabCardProps) {
 
 export default function DaftarLabScreen() {
   const router = useRouter();
+
+  const [labs, setLabs] = useState<Lab[]>([]);
   const [selectedLab, setSelectedLab] = useState<Lab | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const isAvailable = selectedLab?.status === 'Available';
 
@@ -160,6 +130,61 @@ export default function DaftarLabScreen() {
         0,
       )
     : 0;
+
+  useEffect(() => {
+    const fetchLabs = async () => {
+      setIsLoading(true);
+
+      const { data, error } = await supabase
+        .from('laboratorium')
+        .select(`
+          id_lab,
+          nama_lab,
+          ruangan,
+          icon,
+          deskripsi,
+          laboran,
+          status,
+          perangkat (
+            id_perangkat,
+            nama_perangkat,
+            jumlah
+          )
+        `)
+        .order('id_lab', { ascending: true });
+
+      if (error) {
+        console.error(
+          'Gagal mengambil data laboratorium:',
+          error.message,
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const mappedLabs: Lab[] = (
+        (data ?? []) as unknown as LabDatabase[]
+      ).map((item) => ({
+        id: String(item.id_lab),
+        name: item.nama_lab,
+        location: '',
+        room: item.ruangan,
+        icon: item.icon as Lab['icon'],
+        description: item.deskripsi ?? '',
+        laboran: item.laboran,
+        perangkat: (item.perangkat ?? []).map((device) => ({
+          nama: device.nama_perangkat,
+          jumlah: device.jumlah,
+        })),
+        status: item.status === 'Tersedia' ? 'Available' : 'Occupied',
+      }));
+
+      setLabs(mappedLabs);
+      setIsLoading(false);
+    };
+
+    fetchLabs();
+  }, []);
 
   const handleNavigate = (route: NavigationRoute) => {
     const routes: Record<NavigationRoute, string> = {
@@ -179,9 +204,7 @@ export default function DaftarLabScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle="light-content"
-      />
+      <StatusBar barStyle="light-content" />
 
       <View style={styles.screen}>
         <HeaderDaftarLab
@@ -198,16 +221,33 @@ export default function DaftarLabScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {!selectedLab ? (
-            <View style={styles.labList}>
-              {LABS.map((lab) => (
-                <LabCard
-                  key={lab.id}
-                  lab={lab}
-                  onPress={() => setSelectedLab(lab)}
-                />
-              ))}
+          {isLoading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.sectionSubtitle}>
+                Memuat data laboratorium...
+              </Text>
             </View>
+          ) : !selectedLab ? (
+            labs.length > 0 ? (
+              <View style={styles.labList}>
+                {labs.map((lab) => (
+                  <LabCard
+                    key={lab.id}
+                    lab={lab}
+                    onPress={() => setSelectedLab(lab)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.sectionTitle}>
+                  Belum Ada Laboratorium
+                </Text>
+                <Text style={styles.sectionSubtitle}>
+                  Data laboratorium belum tersedia.
+                </Text>
+              </View>
+            )
           ) : (
             <>
               <View style={styles.selectedLabCard}>
@@ -288,7 +328,7 @@ export default function DaftarLabScreen() {
                       },
                     ]}
                   >
-                    {selectedLab.status}
+                    {isAvailable ? 'Available' : 'Occupied'}
                   </Text>
 
                   <Text style={styles.statusPanelDescription}>
@@ -355,7 +395,7 @@ export default function DaftarLabScreen() {
                 <InfoRowDaftarLab
                   icon="checkmark-circle-outline"
                   label="Status Laboratorium"
-                  value={selectedLab.status}
+                  value={isAvailable ? 'Available' : 'Occupied'}
                 />
               </View>
 
@@ -380,47 +420,53 @@ export default function DaftarLabScreen() {
 
                 <View style={styles.sectionDivider} />
 
-                {selectedLab.perangkat.map((item, index) => (
-                  <View key={`${item.nama}-${index}`}>
-                    <View style={styles.deviceRow}>
-                      <View style={styles.deviceIcon}>
-                        <MaterialCommunityIcons
-                          name={
-                            item.nama === 'Komputer'
-                              ? 'desktop-classic'
-                              : item.nama === 'Proyektor'
-                              ? 'projector'
-                              : item.nama === 'Router'
-                              ? 'router-wireless'
-                              : item.nama === 'Switch'
-                              ? 'lan'
-                              : item.nama === 'Access Point'
-                              ? 'access-point'
-                              : 'devices'
-                          }
-                          size={21}
-                          color={COLORS.navy}
-                        />
+                {selectedLab.perangkat.length > 0 ? (
+                  selectedLab.perangkat.map((item, index) => (
+                    <View key={`${item.nama}-${index}`}>
+                      <View style={styles.deviceRow}>
+                        <View style={styles.deviceIcon}>
+                          <MaterialCommunityIcons
+                            name={
+                              item.nama === 'Komputer'
+                                ? 'desktop-classic'
+                                : item.nama === 'Proyektor'
+                                ? 'projector'
+                                : item.nama === 'Router'
+                                ? 'router-wireless'
+                                : item.nama === 'Switch'
+                                ? 'lan'
+                                : item.nama === 'Access Point'
+                                ? 'access-point'
+                                : 'devices'
+                            }
+                            size={21}
+                            color={COLORS.navy}
+                          />
+                        </View>
+
+                        <View style={styles.deviceNameWrap}>
+                          <Text style={styles.deviceName}>
+                            {item.nama}
+                          </Text>
+                        </View>
+
+                        <View style={styles.quantityBadge}>
+                          <Text style={styles.quantityText}>
+                            {item.jumlah} unit
+                          </Text>
+                        </View>
                       </View>
 
-                      <View style={styles.deviceNameWrap}>
-                        <Text style={styles.deviceName}>
-                          {item.nama}
-                        </Text>
-                      </View>
-
-                      <View style={styles.quantityBadge}>
-                        <Text style={styles.quantityText}>
-                          {item.jumlah} unit
-                        </Text>
-                      </View>
+                      {index < selectedLab.perangkat.length - 1 && (
+                        <View style={styles.deviceDivider} />
+                      )}
                     </View>
-
-                    {index < selectedLab.perangkat.length - 1 && (
-                      <View style={styles.deviceDivider} />
-                    )}
-                  </View>
-                ))}
+                  ))
+                ) : (
+                  <Text style={styles.sectionSubtitle}>
+                    Belum ada perangkat terdaftar.
+                  </Text>
+                )}
               </View>
 
               <Pressable
@@ -484,6 +530,16 @@ const styles = StyleSheet.create({
 
   labList: {
     gap: 12,
+  },
+
+  emptyState: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   labCard: {
