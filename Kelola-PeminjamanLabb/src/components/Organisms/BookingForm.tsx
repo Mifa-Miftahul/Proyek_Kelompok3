@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   Pressable,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 
 import LabDropdown, {
@@ -15,10 +17,7 @@ import DateInput from '../Molecules/DateInput';
 import TimeRangeInput from '../Molecules/TimeRangeInput';
 import BookingTextInput from '../Molecules/BookingTextInput';
 
-import {
-  LABORATORIES,
-  BOOKED_SLOTS,
-} from '../../constants/bookingData';
+import { supabase } from '../../lib/supabase';
 
 // ==================== TYPES ====================
 
@@ -38,7 +37,7 @@ type BookingErrors = {
 };
 
 type Props = {
-  onSubmit: (data: BookingFormData) => void;
+  onSubmit: (data: BookingFormData) => void | Promise<void>;
 };
 
 // ==================== VALIDATION ====================
@@ -58,11 +57,17 @@ function validateBooking(data: BookingFormData): BookingErrors {
   } else if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
     errors.date = 'Gunakan format YYYY-MM-DD.';
   } else {
-    const selectedDate = new Date(`${data.date}T00:00:00`);
+    const [year, month, day] = data.date.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, day);
+    const validDate =
+      selectedDate.getFullYear() === year &&
+      selectedDate.getMonth() === month - 1 &&
+      selectedDate.getDate() === day;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (Number.isNaN(selectedDate.getTime())) {
+    if (!validDate) {
       errors.date = 'Tanggal tidak valid.';
     } else if (selectedDate < today) {
       errors.date = 'Tanggal tidak boleh sudah lewat.';
@@ -102,34 +107,6 @@ function validateBooking(data: BookingFormData): BookingErrors {
     errors.purpose = 'Keperluan peminjaman wajib diisi.';
   }
 
-  // Cek bentrok dengan jadwal dummy
-  if (
-    data.lab &&
-    data.date &&
-    isValidTime(data.startTime) &&
-    isValidTime(data.endTime) &&
-    data.startTime < data.endTime
-  ) {
-    const conflict = BOOKED_SLOTS.some((slot) => {
-      if (
-        slot.labId !== data.lab?.id ||
-        slot.date !== data.date
-      ) {
-        return false;
-      }
-
-      return (
-        data.startTime < slot.endTime &&
-        data.endTime > slot.startTime
-      );
-    });
-
-    if (conflict) {
-      errors.time =
-        'Jadwal laboratorium sudah terisi pada waktu tersebut.';
-    }
-  }
-
   return errors;
 }
 
@@ -144,47 +121,153 @@ export default function BookingForm({ onSubmit }: Props) {
   const [subject, setSubject] = useState('');
   const [studentCount, setStudentCount] = useState('');
   const [purpose, setPurpose] = useState('');
+
   const [errors, setErrors] = useState<BookingErrors>({});
 
+  const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
+  const [loadingLabs, setLoadingLabs] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-const handleSubmit = () => {
-  const formData: BookingFormData = {
-    lab,
-    date,
-    startTime,
-    endTime,
-    className,
-    subject,
-    studentCount,
-    purpose,
+  // ==================== FETCH LABORATORIES ====================
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchLaboratories() {
+      try {
+        const { data, error } = await supabase
+          .from('laboratorium')
+          .select('id_lab, nama_lab, kapasitas')
+          .order('nama_lab', { ascending: true });
+
+        if (error) {
+          throw error;
+        }
+
+        if (mounted) {
+          const mappedLabs: Laboratory[] = (data ?? []).map((item) => ({
+            id: String(item.id_lab),
+            name: item.nama_lab,
+            capacity: Number(item.kapasitas),
+          }));
+
+          setLaboratories(mappedLabs);
+        }
+      } catch (error) {
+        console.error('Gagal mengambil laboratorium:', error);
+
+        if (mounted) {
+          Alert.alert(
+            'Gagal Memuat Laboratorium',
+            'Daftar laboratorium tidak dapat dimuat. Silakan coba lagi.',
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoadingLabs(false);
+        }
+      }
+    }
+
+    fetchLaboratories();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // ==================== HANDLE SUBMIT ====================
+
+  const handleSubmit = async () => {
+    if (submitting) return;
+
+    if (loadingLabs) {
+      Alert.alert(
+        'Mohon Tunggu',
+        'Daftar laboratorium masih dimuat.',
+      );
+      return;
+    }
+
+    if (laboratories.length === 0) {
+      Alert.alert(
+        'Laboratorium Tidak Tersedia',
+        'Belum ada data laboratorium yang dapat dipilih.',
+      );
+      return;
+    }
+
+    const formData: BookingFormData = {
+      lab,
+      date,
+      startTime,
+      endTime,
+      className,
+      subject,
+      studentCount,
+      purpose,
+    };
+
+    const validationErrors = validateBooking(formData);
+
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      Alert.alert(
+        'Periksa Kembali Formulir',
+        'Masih ada data yang belum sesuai. Silakan periksa bagian yang ditandai.',
+      );
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await onSubmit(formData);
+    } catch (error) {
+      // Error sudah ditangani oleh fungsi onSubmit di halaman peminjaman.
+      console.error('Pengiriman pengajuan gagal:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const validationErrors = validateBooking(formData);
-  setErrors(validationErrors);
-
-  if (Object.keys(validationErrors).length > 0) {
-    Alert.alert(
-      'Periksa Kembali Formulir',
-      'Masih ada data yang belum sesuai. Silakan periksa bagian yang ditandai.',
-    );
-    return;
-  }
-
-  onSubmit(formData);
-};
-
+  // ==================== RENDER ====================
 
   return (
     <View style={styles.container}>
-      <LabDropdown
-        laboratories={LABORATORIES}
-        selectedLab={lab}
-        onSelect={(value) => {
-          setLab(value);
-          setErrors((prev) => ({ ...prev, lab: '' }));
-        }}
-        error={errors.lab}
-      />
+      {loadingLabs ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#223F91" />
+          <Text style={styles.loadingText}>
+            Memuat daftar laboratorium...
+          </Text>
+        </View>
+      ) : (
+        <LabDropdown
+          laboratories={laboratories}
+          selectedLab={lab}
+          onSelect={(value) => {
+            setLab(value);
+            setErrors((prev) => ({ ...prev, lab: '' }));
+
+            const count = Number(studentCount);
+
+            if (count > value.capacity) {
+              setErrors((prev) => ({
+                ...prev,
+                studentCount:
+                  `Kapasitas laboratorium maksimal ${value.capacity} siswa.`,
+              }));
+            } else {
+              setErrors((prev) => ({
+                ...prev,
+                studentCount: '',
+              }));
+            }
+          }}
+          error={errors.lab}
+        />
+      )}
 
       <DateInput
         value={date}
@@ -213,7 +296,10 @@ const handleSubmit = () => {
         label="Kelas"
         required
         value={className}
-        onChangeText={setClassName}
+        onChangeText={(value) => {
+          setClassName(value);
+          setErrors((prev) => ({ ...prev, className: '' }));
+        }}
         placeholder="Contoh: XI TKJ 1"
         error={errors.className}
       />
@@ -222,7 +308,10 @@ const handleSubmit = () => {
         label="Mata Pelajaran"
         required
         value={subject}
-        onChangeText={setSubject}
+        onChangeText={(value) => {
+          setSubject(value);
+          setErrors((prev) => ({ ...prev, subject: '' }));
+        }}
         placeholder="Contoh: Administrasi Sistem Jaringan"
         error={errors.subject}
       />
@@ -231,9 +320,29 @@ const handleSubmit = () => {
         label="Jumlah Siswa"
         required
         value={studentCount}
-        onChangeText={(value) =>
-          setStudentCount(value.replace(/[^0-9]/g, ''))
-        }
+        onChangeText={(value) => {
+          const numericValue = value.replace(/[^0-9]/g, '');
+          setStudentCount(numericValue);
+
+          const count = Number(numericValue);
+
+          if (
+            numericValue &&
+            lab &&
+            count > lab.capacity
+          ) {
+            setErrors((prev) => ({
+              ...prev,
+              studentCount:
+                `Kapasitas laboratorium maksimal ${lab.capacity} siswa.`,
+            }));
+          } else {
+            setErrors((prev) => ({
+              ...prev,
+              studentCount: '',
+            }));
+          }
+        }}
         placeholder="Masukkan jumlah siswa"
         keyboardType="numeric"
         error={errors.studentCount}
@@ -243,7 +352,10 @@ const handleSubmit = () => {
         label="Keperluan Peminjaman"
         required
         value={purpose}
-        onChangeText={setPurpose}
+        onChangeText={(value) => {
+          setPurpose(value);
+          setErrors((prev) => ({ ...prev, purpose: '' }));
+        }}
         placeholder="Jelaskan keperluan penggunaan laboratorium..."
         multiline
         numberOfLines={4}
@@ -257,14 +369,29 @@ const handleSubmit = () => {
       </View>
 
       <Pressable
-  style={({ pressed }) => [
-    styles.submitButton,
-    pressed && styles.pressed,
-  ]}
-  onPress={handleSubmit}
->
-        <Text style={styles.submitText}>Kirim Pengajuan</Text>
-        <Text style={styles.submitIcon}>→</Text>
+        style={({ pressed }) => [
+          styles.submitButton,
+          pressed && styles.pressed,
+          (submitting || loadingLabs || laboratories.length === 0) &&
+            styles.disabledButton,
+        ]}
+        onPress={handleSubmit}
+        disabled={
+          submitting ||
+          loadingLabs ||
+          laboratories.length === 0
+        }
+      >
+        {submitting ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <>
+            <Text style={styles.submitText}>
+              Kirim Pengajuan
+            </Text>
+            <Text style={styles.submitIcon}>→</Text>
+          </>
+        )}
       </Pressable>
     </View>
   );
@@ -280,6 +407,18 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     padding: 16,
     marginBottom: 20,
+  },
+  loadingContainer: {
+    minHeight: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  loadingText: {
+    color: '#64748B',
+    fontSize: 12,
   },
   note: {
     backgroundColor: '#F8FAFC',
@@ -313,5 +452,8 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });

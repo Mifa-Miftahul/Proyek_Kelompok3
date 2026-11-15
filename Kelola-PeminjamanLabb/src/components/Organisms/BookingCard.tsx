@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   View,
@@ -8,17 +9,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import {
-  BookingRequest,
-} from '@/constants/bookingData';
-
+import { BookingRequest } from '@/constants/bookingData';
 import BookingStatusBadge from '@/components/Molecules/BookingStatusBadge';
 import BookingInfoRow from '@/components/Molecules/BookingInfoRow';
 
 type Props = {
   booking: BookingRequest;
   onDetail: (booking: BookingRequest) => void;
-  onApprove: (id: string) => void;
 };
 
 const formatDate = (date: string) => {
@@ -36,14 +33,15 @@ const formatDate = (date: string) => {
 export default function BookingCard({
   booking,
   onDetail,
-  onApprove,
 }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.top}>
         <View style={styles.idWrap}>
           <Text style={styles.id}>{booking.id}</Text>
-          <Text style={styles.date}>{formatDate(booking.date)}</Text>
+          <Text style={styles.date}>
+            {formatDate(booking.date)}
+          </Text>
         </View>
 
         <BookingStatusBadge status={booking.status} />
@@ -69,28 +67,13 @@ export default function BookingCard({
           style={styles.detailButton}
           onPress={() => onDetail(booking)}
         >
-          <Ionicons name="eye-outline" size={17} color="#223F91" />
+          <Ionicons
+            name="eye-outline"
+            size={17}
+            color="#223F91"
+          />
           <Text style={styles.detailText}>Lihat Detail</Text>
         </Pressable>
-
-        {booking.status === 'Pending' && (
-          <View style={styles.actionGroup}>
-            <Pressable
-  style={styles.rejectButton}
-  onPress={() => onDetail(booking)}
->
-              <Ionicons name="close" size={18} color="#DC2626" />
-            </Pressable>
-
-            <Pressable
-              style={styles.approveButton}
-              onPress={() => onApprove(booking.id)}
-            >
-              <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              <Text style={styles.approveText}>Setujui</Text>
-            </Pressable>
-          </View>
-        )}
       </View>
     </View>
   );
@@ -155,12 +138,11 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     marginTop: 12,
     paddingTop: 12,
-    gap: 8,
   },
   detailButton: {
     flexDirection: 'row',
@@ -171,35 +153,6 @@ const styles = StyleSheet.create({
   detailText: {
     color: '#223F91',
     fontSize: 12,
-    fontWeight: '700',
-  },
-  actionGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  rejectButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF7F7',
-  },
-  approveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#15803D',
-    paddingHorizontal: 12,
-    height: 36,
-    borderRadius: 10,
-  },
-  approveText: {
-    color: '#FFFFFF',
-    fontSize: 11,
     fontWeight: '700',
   },
 });

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,21 +9,25 @@ import BookingCard from './BookingCard';
 type Props = {
   bookings: BookingRequest[];
   onDetail: (booking: BookingRequest) => void;
-  onApprove: (id: string) => void;
   filter: string;
 };
 
 export default function BookingList({
   bookings,
   onDetail,
-  onApprove,  
   filter,
 }: Props) {
   if (bookings.length === 0) {
     return (
       <View style={styles.empty}>
-        <Ionicons name="file-tray-outline" size={42} color="#94A3B8" />
-        <Text style={styles.emptyTitle}>Belum Ada Pengajuan</Text>
+        <Ionicons
+          name="file-tray-outline"
+          size={42}
+          color="#94A3B8"
+        />
+        <Text style={styles.emptyTitle}>
+          Belum Ada Pengajuan
+        </Text>
         <Text style={styles.emptyDescription}>
           Tidak ada pengajuan dengan status {filter.toLowerCase()}.
         </Text>
@@ -37,7 +42,6 @@ export default function BookingList({
           key={booking.id}
           booking={booking}
           onDetail={onDetail}
-          onApprove={onApprove}
         />
       ))}
     </View>
