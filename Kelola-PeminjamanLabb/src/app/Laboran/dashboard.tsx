@@ -1,5 +1,6 @@
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   SafeAreaView,
   ScrollView,
@@ -13,7 +14,6 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 
 import LaboranBottomNavigation from '../../components/Organisms/LaboranBottomNavigation';
 import HeaderDashboard from '../../components/Molecules/HeaderDashboard';
@@ -116,7 +116,6 @@ export default function DashboardLaboran() {
 
     if (error) {
       console.error(`QUERY GAGAL: ${queryName}`);
-
       console.error('Error asli:', error);
 
       console.error(
@@ -175,9 +174,10 @@ export default function DashboardLaboran() {
       const user = session?.user ?? null;
 
       if (!user) {
-        console.warn(
-          'Session login tidak ditemukan. Dashboard berjalan dalam mode pengembangan.'
-        );
+        console.warn('Session login tidak ditemukan.');
+
+        setLoading(false);
+        return;
       } else {
         // --------------------------------------
         // 2. VALIDASI PROFIL LABORAN
@@ -455,55 +455,57 @@ export default function DashboardLaboran() {
   // LOAD DATA DAN REALTIME
   // ==========================================
 
-  useEffect(() => {
-    fetchDashboardData();
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboardData();
 
-    const channel = supabase
-      .channel('dashboard-laboran-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'peminjaman',
-        },
-        () => {
-          fetchDashboardData();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'laboratorium',
-        },
-        () => {
-          fetchDashboardData();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'perangkat',
-        },
-        () => {
-          fetchDashboardData();
-        }
-      )
-      .subscribe((status) => {
-        console.log(
-          'Status realtime dashboard:',
-          status
-        );
-      });
+      const channel = supabase
+        .channel('dashboard-laboran-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'peminjaman',
+          },
+          () => {
+            fetchDashboardData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'laboratorium',
+          },
+          () => {
+            fetchDashboardData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'perangkat',
+          },
+          () => {
+            fetchDashboardData();
+          }
+        )
+        .subscribe((status) => {
+          console.log(
+            'Status realtime dashboard:',
+            status
+          );
+        });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchDashboardData]);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }, [fetchDashboardData])
+  );
 
   // ==========================================
   // LOGOUT
@@ -1606,7 +1608,7 @@ const styles = StyleSheet.create({
   logoutActions: {
     flexDirection: 'row',
     width: '100%',
-    gap: 12,
+    gap: 12,  
   },
 
   cancelButton: {

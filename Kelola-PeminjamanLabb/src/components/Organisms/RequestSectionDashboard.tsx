@@ -16,6 +16,7 @@ type RequestItem = {
   lab: string;
   date: string;
   time: string;
+  teacherName: string;
   status: RequestStatus;
   icon: React.ComponentProps<
     typeof import('@expo/vector-icons').MaterialCommunityIcons
