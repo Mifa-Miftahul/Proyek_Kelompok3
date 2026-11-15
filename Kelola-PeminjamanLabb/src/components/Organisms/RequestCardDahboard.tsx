@@ -21,6 +21,7 @@ type RequestItem = {
   lab: string;
   date: string;
   time: string;
+  teacherName: string;
   status: RequestStatus;
   icon: React.ComponentProps<
     typeof MaterialCommunityIcons
@@ -97,7 +98,7 @@ export default function RequestCard({
 
           <InfoRowDashboard
             icon="person"
-            text="Salwa Ayudia"
+            text={item.teacherName}
             style={styles.teacherMeta}
           />
         </View>

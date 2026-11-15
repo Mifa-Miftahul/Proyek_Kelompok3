@@ -1,719 +1,367 @@
-import React, { useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
-    SafeAreaView,
-    View,
-    Text,
-    StyleSheet,
-    Pressable,
-    StatusBar,
-    Platform,
-    Alert,
-    FlatList,
-    Modal,
-    ListRenderItemInfo,
-    useWindowDimensions,
-  } from 'react-native';
-  import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-  import { useRouter } from 'expo-router';
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
-  // === IMPORT FROM COMPENENTS MOLECULES AND ORGANISMS ===
-  import SummaryPanelDashboard from '../../components/Organisms/SummaryPanelDashboard';
-  import BottomNavigation from '../../components/Organisms/BottomNavigation';
-  import RequestSectionDashboard from '../../components/Organisms/RequestSectionDashboard';
-  import HeaderDashboard from '../../components/Molecules/HeaderDashboard';
+import BackHeader from "../../components/Molecules/BackHeader";
+import BookingFilter, {
+  type BookingFilterType,
+} from "../../components/Molecules/BookingFilter";
+import EmptyState from "../../components/Molecules/EmptyState";
+import StatTile from "../../components/Molecules/StatTile";
+import BottomNavigation from "../../components/Organisms/BottomNavigation";
+import GuruRequestDetailModal from "../../components/Organisms/GuruRequestDetailModal";
+import RequestCard from "../../components/Organisms/RequestCardDahboard";
+import { fetchGuruRequests, type GuruRequest } from "../../lib/guruRequests";
 
+const COLORS = {
+  navy: "#223F91",
+  background: "#F5F7FB",
+  white: "#FFFFFF",
+  muted: "#64748B",
+  red: "#DC2626",
+};
 
-  // === TYPES ===
-  type RequestStatus = 'Accepted' | 'Pending' | 'Reject';
+const VALID_FILTERS: BookingFilterType[] = [
+  "Semua",
+  "Pending",
+  "Disetujui",
+  "Ditolak",
+];
 
-  type RequestItem = {
-    id: string;
-    lab: string;
-    date: string;
-    time: string;
-    status: RequestStatus;
-    icon: React.ComponentProps<
-      typeof MaterialCommunityIcons
-    >['name'];
-  };
+// Rute bottom navigation Guru.
+const ROUTES: Record<string, string> = {
+  Dashboard: "/Guru/dashboard",
+  JadwalLab: "/Guru/jadwal-lab",
+  DaftarLab: "/Guru/daftar-lab",
+  BuatPeminjaman: "/Guru/peminjaman",
+};
 
-  type SectionItem = {
-    id: 'today' | 'history';
-    title: string;
-    items: RequestItem[];
-  };
+export default function RiwayatGuruScreen() {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWideScreen = width >= 700;
 
-  type HoverableTouchableProps = {
-    children: React.ReactNode;
-    style?: any;
-    hoverStyle?: any;
-    onPress: () => void;
-    accessibilityLabel?: string;
-  };
+  // Filter awal bisa dikirim dari dashboard, mis. ?filter=Pending
+  const params = useLocalSearchParams<{ filter?: string }>();
+  const initialFilter = VALID_FILTERS.includes(
+    params.filter as BookingFilterType,
+  )
+    ? (params.filter as BookingFilterType)
+    : "Semua";
 
+  const [filter, setFilter] = useState<BookingFilterType>(initialFilter);
+  const [requests, setRequests] = useState<GuruRequest[]>([]);
+  const [selected, setSelected] = useState<GuruRequest | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // === COLORS ===
-  const COLORS = {
-    navy: '#223F91',
-    blue: '#3B82F6',
-    paleBlue: '#DCEBFF',
-    background: '#F5F7FB',
-    white: '#FFFFFF',
-    muted: '#64748B',
-    greenBg: '#D1FAE5',
-    greenText: '#059669',
-    yellowBg: '#FEF3C7',
-    yellowText: '#D97706',
-    redBg: '#FEE2E2',
-    redText: '#EF4444',
-  };
+  const load = useCallback(async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
+      setErrorMessage("");
 
-
-
-  // === DUMMY DATA HARDCODE FOR PENGAJUAN HARI INI AND RIWAYAT PENGAJUAN ===
-  const todayRequests: RequestItem[] = [
-    {
-      id: 'PEM-001',
-      lab: 'Lab Pemrograman',
-      date: '19 Oktober 2026',
-      time: '10.00 - 12.30',
-      status: 'Accepted',
-      icon: 'monitor',
-    },
-    {
-      id: 'PEM-002',
-      lab: 'Lab Pemrograman',
-      date: '19 Oktober 2026',
-      time: '12.30 - 15.30',
-      status: 'Pending',
-      icon: 'monitor',
-    },
-  ];
-
-  const historyRequests: RequestItem[] = [
-    {
-      id: 'PEM-003',
-      lab: 'Lab Jaringan',
-      date: '17 Oktober 2026',
-      time: '07.30 - 10.00',
-      status: 'Accepted',
-      icon: 'lan',
-    },
-    {
-      id: 'PEM-004',
-      lab: 'Lab Fiber Optik',
-      date: '16 Oktober 2026',
-      time: '12.30 - 15.30',
-      status: 'Reject',
-      icon: 'access-point',
-    },
-  ];
-
-  const sections: SectionItem[] = [
-    {
-      id: 'today',
-      title: 'Pengajuan Hari Ini',
-      items: todayRequests,
-    },
-    {
-      id: 'history',
-      title: 'Riwayat Pengajuan Peminjaman',
-      items: historyRequests,
-    },
-  ];
-
-
-
-  // === REUSABLE COMPONENTS ===
-  // Tombol dengan efek hover untuk web.
-  function HoverableTouchable({
-    children,
-    style,
-    hoverStyle,
-    onPress,
-    accessibilityLabel,
-  }: HoverableTouchableProps) {
-    const [isHovered, setIsHovered] = useState(false);
-
-    return (
-      <Pressable
-        style={[
-          style,
-          Platform.OS === 'web' && isHovered
-            ? hoverStyle
-            : null,
-        ]}
-        onPress={onPress}
-        onHoverIn={() => setIsHovered(true)}
-        onHoverOut={() => setIsHovered(false)}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-      >
-        {children}
-      </Pressable>
-    );
-  }
-
-  // Kartu yang dapat ditekan.
-  function TouchableCard({
-    children,
-    style,
-    onPress,
-  }: {
-    children: React.ReactNode;
-    style?: any;
-    onPress: () => void;
-  }) {
-    return (
-      <Pressable
-        style={style}
-        onPress={onPress}
-        accessibilityRole="button"
-      >
-        {children}
-      </Pressable>
-    );
-  }
-
-
-
-  // === DASHBOARD SCREEN ===
-
-  export default function DashboardScreen() {
-    const router = useRouter();
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-    const handleLogout = () => {
-      setShowLogoutModal(false);
-      router.dismissTo('../login' as never);
-    };
-    
-    const { width } = useWindowDimensions();
-
-    const isWideScreen = width >= 700;
-
-    // Daftar rute halaman.
-    const routes: Record<string, string> = {
-      Dashboard: '/Guru/dashboard',
-      JadwalLab: '/Guru/jadwal-lab',
-      DaftarLab: '/Guru/daftar-lab',
-      BuatPeminjaman: '/Guru/peminjaman',
-      Notifikasi: '/Guru/notifikasi',
-      RiwayatPengajuan: '/Guru/riwayat',
-      DetailPengajuan: '/Guru/detail-pengajuan',
-    };
-
-    // Navigasi ke halaman tujuan.
-    const goTo = (
-      screen: string,
-      params: Record<string, string> = {},
-    ) => {
-      const path = routes[screen];
-
-      if (!path) {
-        Alert.alert(
-          'Halaman belum tersedia',
-          'Rute halaman belum ditentukan.',
-        );
-        return;
-      }
-
-      if (screen === 'Dashboard') {
-        router.replace(path as never);
-        return;
-      }
-
-      router.push({
-        pathname: path as never,
-        params,
-      });
-    };
-
-    // Membuka detail pengajuan.
-    const openRequest = (item: RequestItem) => {
-      goTo('DetailPengajuan', {
-        requestId: item.id,
-        labName: item.lab,
-        date: item.date,
-        time: item.time,
-        status: item.status,
-      });
-    };
-
-    // Render setiap bagian daftar pengajuan.
-    
-    const renderSection = ({
-      item,
-    }: ListRenderItemInfo<SectionItem>) => {
-      const isHistory = item.id === 'history';
-
-      return (
-        <RequestSectionDashboard
-          title={item.title}
-          items={item.items}
-          onRequestPress={openRequest}
-          showArrow={isHistory}
-          onHeaderPress={() => {
-            if (isHistory) {
-              goTo('RiwayatPengajuan');
-            }
-          }}
-        />
+      const result = await fetchGuruRequests();
+      setRequests(result.requests);
+    } catch (error) {
+      console.error("Gagal memuat riwayat Guru:", error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat memuat riwayat.",
       );
-    };
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Muat ulang setiap halaman ini dibuka kembali.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const counts = useMemo(
+    () => ({
+      total: requests.length,
+      pending: requests.filter((r) => r.bookingStatus === "Pending").length,
+      approved: requests.filter((r) => r.bookingStatus === "Disetujui").length,
+      rejected: requests.filter((r) => r.bookingStatus === "Ditolak").length,
+    }),
+    [requests],
+  );
+
+  const visibleRequests = useMemo(
+    () =>
+      filter === "Semua"
+        ? requests
+        : requests.filter((r) => r.bookingStatus === filter),
+    [requests, filter],
+  );
+
+  // Kembali ke dashboard (atau halaman sebelumnya).
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace(ROUTES.Dashboard as never);
+    }
+  };
+
+  const handleNavigate = (route: string) => {
+    const path = ROUTES[route];
+    if (!path) return;
+
+    if (route === "Dashboard") {
+      router.replace(path as never);
+      return;
+    }
+
+    router.push(path as never);
+  };
+
+  // Kartu yang ditekan -> buka detail lengkap.
+  const handleOpen = (item: { id: string }) => {
+    const full = requests.find((r) => r.id === item.id);
+    if (full) setSelected(full);
+  };
+
+  const renderHeader = () => (
+    <View style={styles.listHeader}>
+      <View style={styles.statGrid}>
+        <StatTile
+          icon="clipboard-text-outline"
+          value={counts.total}
+          label="Total Pengajuan"
+          tone="blue"
+          onPress={() => setFilter("Semua")}
+        />
+        <StatTile
+          icon="clipboard-clock-outline"
+          value={counts.pending}
+          label="Pending"
+          tone="yellow"
+          onPress={() => setFilter("Pending")}
+        />
+        <StatTile
+          icon="check-circle-outline"
+          value={counts.approved}
+          label="Disetujui"
+          tone="green"
+          onPress={() => setFilter("Disetujui")}
+        />
+        <StatTile
+          icon="close-circle-outline"
+          value={counts.rejected}
+          label="Ditolak"
+          tone="red"
+          onPress={() => setFilter("Ditolak")}
+        />
+      </View>
+
+      <View style={styles.filterWrap}>
+        <BookingFilter activeFilter={filter} onFilterChange={setFilter} />
+      </View>
+
+      <Text style={styles.resultText}>
+        {visibleRequests.length} pengajuan
+        {filter !== "Semua" ? ` · ${filter}` : ""}
+      </Text>
+    </View>
+  );
+
+  const renderEmpty = () => {
+    if (loading) return null;
+
+    if (errorMessage) {
+      return (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+          <Pressable style={styles.retryButton} onPress={() => load()}>
+            <Text style={styles.retryText}>Coba Lagi</Text>
+          </Pressable>
+        </View>
+      );
+    }
 
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar
-          barStyle="light-content"
-        />
-
-        <View style={styles.screen}>
-          <View
-            style={[
-              styles.page,
-              isWideScreen && styles.pageWide,
-            ]}
-          >
-
-            <HeaderDashboard
-              onLogoutPress={() => setShowLogoutModal(true)}
-            />
-
-            <Modal
-              visible={showLogoutModal}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setShowLogoutModal(false)}
-            >
-              <View style={styles.logoutOverlay}>
-                <View style={styles.logoutModal}>
-                  <View style={styles.logoutIcon}>
-                    <Ionicons
-                      name="log-out-outline"
-                      size={30}
-                      color="#223F91"
-                    />
-                  </View>
-
-                  <Text style={styles.logoutTitle}>
-                    Konfirmasi Logout
-                  </Text>
-
-                  <Text style={styles.logoutMessage}>
-                    Apakah kamu yakin ingin keluar dari akun?
-                  </Text>
-
-                  <View style={styles.logoutActions}>
-                    <Pressable
-                      style={styles.cancelButton}
-                      onPress={() => setShowLogoutModal(false)}
-                    >
-                      <Text style={styles.cancelButtonText}>
-                        Batal
-                      </Text>
-                    </Pressable>
-
-                    <Pressable
-                      style={styles.confirmLogoutButton}
-                      onPress={handleLogout}
-                    >
-                      <Text style={styles.confirmLogoutText}>
-                        Logout
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            </Modal>
-
-            {/* KONTEN YANG BISA DI-SCROLL */}
-            <FlatList<SectionItem>
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
-              data={sections}
-              keyExtractor={(item) => item.id}
-              renderItem={renderSection}
-              showsVerticalScrollIndicator={false}
-              ListHeaderComponent={
-                <View style={styles.summaryPanel}>
-                  <Text style={styles.summarySectionTitle}>
-                    Ringkasan
-                  </Text>
-
-                  {/* SUMMARY PANEL */}
-                  <SummaryPanelDashboard
-                    pendingCount={1}
-                    laboratoryCount={3}
-                  />
-                </View>
-              }
-              ListFooterComponent={
-                <View style={styles.listBottomSpace} />
-              }
-            />            
-
-            {/* BOTTOM NAVIGATION */}
-            <BottomNavigation
-              activeRoute="Dashboard"
-              onNavigate={(route) => goTo(route)}
-            />
-          </View>
-        </View>
-      </SafeAreaView>
+      <EmptyState
+        icon="time-outline"
+        title={
+          filter === "Semua"
+            ? "Belum ada riwayat"
+            : `Tidak ada pengajuan ${filter}`
+        }
+        description={
+          filter === "Semua"
+            ? "Pengajuan peminjaman laboratorium yang kamu buat akan muncul di sini."
+            : "Coba pilih filter lain untuk melihat pengajuan kamu."
+        }
+      />
     );
-  }
+  };
 
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" />
 
+      <View style={styles.screen}>
+        <View style={[styles.page, isWideScreen && styles.pageWide]}>
+          <BackHeader
+            title="Riwayat Pengajuan"
+            subtitle="Seluruh pengajuan peminjaman laboratorium kamu"
+            onBackPress={handleBack}
+          />
 
-  // === STYLES ===
+          {loading && (
+            <View style={styles.loading}>
+              <ActivityIndicator size="large" color={COLORS.navy} />
+              <Text style={styles.loadingText}>Memuat riwayat...</Text>
+            </View>
+          )}
 
-  const styles = StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: COLORS.background,
-    },
+          <FlatList<GuruRequest>
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            data={visibleRequests}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <RequestCard item={item} onPress={handleOpen} />
+            )}
+            ListHeaderComponent={renderHeader}
+            ListEmptyComponent={renderEmpty}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  load(true);
+                }}
+                tintColor={COLORS.navy}
+              />
+            }
+          />
 
-    screen: {
-      flex: 1,
-      width: '100%',
-      alignItems: 'center',
-      backgroundColor: COLORS.background,
-    },
+          <BottomNavigation
+            activeRoute="Dashboard"
+            onNavigate={handleNavigate}
+          />
+        </View>
+      </View>
 
-    page: {
-      flex: 1,
-      width: '100%',
-      maxWidth: 560,
-      backgroundColor: COLORS.background,
-    },
+      <GuruRequestDetailModal
+        visible={selected !== null}
+        request={selected}
+        onClose={() => setSelected(null)}
+      />
+    </SafeAreaView>
+  );
+}
 
-    pageWide: {
-      borderLeftWidth: 1,
-      borderRightWidth: 1,
-      borderColor: '#E2E8F0',
-    },
-
-    // LIST
-    list: {
-      flex: 1,
-    },
-
-    listContent: {
-      paddingHorizontal: 12,
-      paddingTop: 10,
-      paddingBottom: 4,
-      gap: 10,
-    },
-
-    listBottomSpace: {
-      height: 8,
-    },
-
-    // SUMMARY PANEL
-    summaryPanel: {
-      backgroundColor: COLORS.white,
-      borderRadius: 17,
-      paddingHorizontal: 13,
-      paddingTop: 12,
-      paddingBottom: 12,
-      shadowColor: '#0F172A',
-      shadowOffset: {
-        width: 0,
-        height: 3,
-      },
-      shadowOpacity: 0.12,
-      shadowRadius: 5,
-      elevation: 3,
-      ...Platform.select({
-        web: {
-          boxShadow: '0px 3px 8px rgba(15, 23, 42, 0.10)',
-        },
-      }),
-    },
-
-    summarySectionTitle: {
-      color: COLORS.navy,
-      fontSize: 12,
-      fontWeight: '700',
-      marginBottom: 11,
-    },
-
-    // SECTION CARDS
-    sectionCard: {
-      backgroundColor: COLORS.white,
-      borderRadius: 17,
-      paddingHorizontal: 13,
-      paddingTop: 12,
-      paddingBottom: 8,
-      marginTop: 10,
-      shadowColor: '#0F172A',
-      shadowOffset: {
-        width: 0,
-        height: 3,
-      },
-      shadowOpacity: 0.12,
-      shadowRadius: 5,
-      elevation: 3,
-      ...Platform.select({
-        web: {
-          boxShadow:
-            '0px 3px 8px rgba(15, 23, 42, 0.10)',
-        },
-      }),
-    },
-
-    sectionHeadingRow: {
-      width: '100%',
-      minHeight: 28,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 8,
-      borderRadius: 8,
-    },
-
-    sectionTitle: {
-      flex: 1,
-      minWidth: 0,
-      color: COLORS.navy,
-      fontSize: 12,
-      fontWeight: '700',
-      marginRight: 8,
-    },
-
-    // REQUEST CARD
-    requestCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: COLORS.white,
-      borderRadius: 14,
-      paddingHorizontal: 10,
-      paddingVertical: 10,
-      marginBottom: 9,
-      minHeight: 79,
-      borderWidth: 1,
-      borderColor: '#F0F4FA',
-      shadowColor: '#0F172A',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 2,
-      ...Platform.select({
-        web: {
-          boxShadow:
-            '0px 2px 5px rgba(15, 23, 42, 0.08)',
-        },
-      }),
-    },
-
-    labIconCircle: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: COLORS.paleBlue,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 10,
-    },
-
-    requestDetails: {
-      flex: 1,
-      minWidth: 0,
-    },
-
-    requestTitleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 5,
-      marginBottom: 5,
-    },
-
-    labName: {
-      flex: 1,
-      color: COLORS.navy,
-      fontSize: 11,
-      fontWeight: '700',
-    },
-
-    // REQUEST METADATA
-    metaBottomRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      flexWrap: 'wrap',
-      gap: 5,
-    },
-
-    teacherMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-
-    metaText: {
-      color: COLORS.muted,
-      fontSize: 8,
-    },
-
-    // BOTTOM NAVIGATION
-    bottomBar: {
-      minHeight: 64,
-      backgroundColor: COLORS.navy,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-around',
-      paddingTop: 5,
-      paddingBottom: Platform.OS === 'ios' ? 12 : 4,
-      borderTopLeftRadius: 14,
-      borderTopRightRadius: 14,
-    },
-
-    navItem: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 54,
-      gap: 3,
-      borderRadius: 12,
-    },
-
-    navIconWrap: {
-      width: 42,
-      height: 34,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 18,
-    },
-
-    activeNavIcon: {
-      backgroundColor: COLORS.white,
-      borderRadius: 18,
-      width: 47,
-      height: 39,
-      marginTop: -15,
-      shadowColor: '#0F172A',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.18,
-      shadowRadius: 3,
-      elevation: 4,
-      ...Platform.select({
-        web: {
-          boxShadow:
-            '0px 2px 5px rgba(15, 23, 42, 0.18)',
-        },
-      }),
-    },
-
-    navLabel: {
-      color: '#E0E7FF',
-      fontSize: 8,
-      fontWeight: '500',
-      textAlign: 'center',
-    },
-
-    activeNavLabel: {
-      color: COLORS.white,
-      fontWeight: '700',
-    },
-
-    // HOVER EFFECT
-    hoverNotification: {
-      backgroundColor: 'rgba(255,255,255,0.15)',
-    },
-
-    hoverNavItem: {
-      backgroundColor: 'rgba(255,255,255,0.12)',
-    },
-
-    logoutOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 25,
-    },
-
-    logoutModal: {
-      width: '100%',
-      maxWidth: 360,
-      backgroundColor: '#FFFFFF',
-      borderRadius: 18,
-      padding: 24,
-      alignItems: 'center',
-      elevation: 10,
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-    },
-
-    logoutIcon: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: '#DCEBFF',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 16,
-    },
-
-    logoutTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: '#223F91',
-      marginBottom: 8,
-    },
-
-    logoutMessage: {
-      fontSize: 13,
-      color: '#64748B',
-      textAlign: 'center',
-      lineHeight: 20,
-      marginBottom: 24,
-    },
-
-    logoutActions: {
-      flexDirection: 'row',
-      width: '100%',
-      gap: 12,
-    },
-
-    cancelButton: {
-      flex: 1,
-      height: 44,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: '#D1D5DB',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-
-    cancelButtonText: {
-      color: '#64748B',
-      fontSize: 14,
-      fontWeight: '600',
-    },
-
-    confirmLogoutButton: {
-      flex: 1,
-      height: 44,
-      borderRadius: 10,
-      backgroundColor: '#223F91',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-
-    confirmLogoutText: {
-      color: '#FFFFFF',
-      fontSize: 14,
-      fontWeight: '600',
-    },
-  });
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  screen: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    backgroundColor: COLORS.background,
+  },
+  page: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 560,
+    backgroundColor: COLORS.background,
+  },
+  pageWide: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 12,
+  },
+  listHeader: {
+    marginBottom: 6,
+  },
+  statGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  filterWrap: {
+    marginTop: 14,
+  },
+  resultText: {
+    color: COLORS.muted,
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  loading: {
+    position: "absolute",
+    top: 85,
+    left: 0,
+    right: 0,
+    bottom: 64,
+    zIndex: 10,
+    backgroundColor: COLORS.background,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    color: COLORS.muted,
+    fontSize: 12,
+  },
+  errorBox: {
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    padding: 22,
+    ...Platform.select({ web: { cursor: "default" } }),
+  },
+  errorText: {
+    color: COLORS.red,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
+    marginBottom: 14,
+  },
+  retryButton: {
+    backgroundColor: COLORS.navy,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  retryText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+});
