@@ -22,7 +22,7 @@ const COLORS = {
 
 export default function HeaderDashboard({
   onLogoutPress,
-  greeting = "Halo, Salwa Ayudia 👋🏻",
+  greeting = "Halo, Guru 👋🏻",
   schoolName = "Guru - SMK Islamic Center Cirebon",
 }: HeaderDashboardProps) {
   const [isHovered, setIsHovered] = useState(false);
