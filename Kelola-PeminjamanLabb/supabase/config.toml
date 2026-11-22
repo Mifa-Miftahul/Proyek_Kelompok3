@@ -423,7 +423,7 @@ enabled = true
 
 [functions.create-teacher]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/create-teacher/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -434,12 +434,18 @@ entrypoint = "./functions/create-teacher/index.ts"
 
 [functions.update-teacher]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/update-teacher/deno.json"
 entrypoint = "./functions/update-teacher/index.ts"
 
 [functions.delete-teacher]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/delete-teacher/deno.json"
 entrypoint = "./functions/delete-teacher/index.ts"
+
+[functions.login-with-nip]
+enabled = true
+verify_jwt = false
+import_map = "./functions/login-with-nip/deno.json"
+entrypoint = "./functions/login-with-nip/index.ts"

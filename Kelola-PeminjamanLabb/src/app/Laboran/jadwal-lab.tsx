@@ -49,9 +49,9 @@ type LabItem = {
 };
 
 const labs: LabItem[] = [
-  { id: 'LAB-001', name: 'Lab Pemrograman', room: 'Ruang Lab 1', icon: 'monitor', status: 'Available' },
-  { id: 'LAB-002', name: 'Lab Jaringan', room: 'Ruang Lab 2', icon: 'lan', status: 'Occupied' },
-  { id: 'LAB-003', name: 'Lab Fiber Optik', room: 'Ruang Lab 3', icon: 'access-point', status: 'Available' },
+  { id: 'LAB-001', name: 'Lab Pemrograman', room: 'Ruang Lab 1', icon: 'monitor', status: 'Tersedia' },
+  { id: 'LAB-002', name: 'Lab Jaringan', room: 'Ruang Lab 2', icon: 'lan', status: 'Dipakai' },
+  { id: 'LAB-003', name: 'Lab Fiber Optik', room: 'Ruang Lab 3', icon: 'access-point', status: 'Tersedia' },
 ];
 
 const initialSchedules: Schedule[] = [
