@@ -56,7 +56,7 @@ export default function KelolaAkunGuruScreen() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("id, nama, nip")
+        .select("id, nama, nip, email")
         .eq("role", "guru")
         .eq("is_active", true)
         .order("nama", { ascending: true });
@@ -71,7 +71,7 @@ export default function KelolaAkunGuruScreen() {
         id: item.id,
         nama: item.nama,
         nip: item.nip,
-        password: "",
+        email: item.email,
       }));
 
       setTeachers(teacherData);
@@ -113,6 +113,7 @@ export default function KelolaAkunGuruScreen() {
             body: {
               nama: input.nama.trim(),
               nip: input.nip.trim(),
+              email: input.email.trim().toLowerCase(),
               password: input.password,
             },
           },
@@ -173,6 +174,7 @@ export default function KelolaAkunGuruScreen() {
               id: editing.id,
               nama: input.nama.trim(),
               nip: input.nip.trim(),
+              email: input.email.trim().toLowerCase(),
               password: input.password,
             },
           },

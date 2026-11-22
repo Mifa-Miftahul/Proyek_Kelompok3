@@ -72,6 +72,7 @@ export default function DashboardLaboran() {
   const router = useRouter();
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [namaLaboran, setNamaLaboran] = useState('Laboran');
   const [selectedRequest, setSelectedRequest] =
     useState<RequestItem | null>(null);
 
@@ -187,7 +188,7 @@ export default function DashboardLaboran() {
           'Memeriksa profil laboran',
           supabase
             .from('users')
-            .select('id, role, is_active')
+            .select('id, nama, role, is_active')
             .eq('id', user.id)
             .maybeSingle()
         );
@@ -206,6 +207,8 @@ export default function DashboardLaboran() {
             'Akun bukan laboran atau akun tidak aktif.'
           );
         }
+
+        setNamaLaboran(profile.nama || 'Laboran');
       }
 
       // --------------------------------------
@@ -576,8 +579,8 @@ export default function DashboardLaboran() {
       <StatusBar barStyle="light-content" />
 
       <HeaderDashboard
-        greeting="Halo, Laboran 👋🏻"
-        schoolName="Laboran - SMK Islamic Center Cirebon"
+        greeting={`Halo, ${namaLaboran} 👋🏻`}
+        schoolName="SMK Islamic Center Cirebon"
         onLogoutPress={() => setShowLogoutModal(true)}
       />
 
@@ -772,6 +775,28 @@ export default function DashboardLaboran() {
 
                 <Text style={styles.menuDescription}>
                   Kelola pengajuan peminjaman
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.menuCard}
+                onPress={() =>
+                  router.push('/Laboran/atur-password' as never)
+                }
+              >
+                <View style={styles.menuIcon}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={25}
+                    color={COLORS.blue}
+                  />
+                </View>
+
+                <Text style={styles.menuTitle}>
+                  Atur Password NIP
+                </Text>
+
+                <Text style={styles.menuDescription}>
+                  Buat atau perbarui password login menggunakan NIP
                 </Text>
               </Pressable>
             </View>

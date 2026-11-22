@@ -9,7 +9,7 @@ const COLORS = {
   paleRed: '#FEE2E2',
 };
 
-type LabStatus = 'Tersedia' | 'Dipakai';
+export type LabStatus = 'Tersedia' | 'Dipakai';
 
 type StatusBadgeProps = {
   status: LabStatus;

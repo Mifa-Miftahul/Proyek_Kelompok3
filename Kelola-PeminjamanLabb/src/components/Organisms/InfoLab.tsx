@@ -7,9 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import InfoRowDaftarLab from '../Molecules/InfoRowDaftarLab';
-import StatusBadgeDaftarLab from '../Molecules/StatusBadgeDaftarLab';
-
-type LabStatus = 'Available' | 'Occupied';
+import StatusBadgeDaftarLab, { LabStatus } from '../Molecules/StatusBadgeDaftarLab';
 
 type InfoLabProps = {
   name: string;

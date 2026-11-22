@@ -24,11 +24,12 @@ export default {
       const id = String(body.id ?? "").trim();
       const nama = String(body.nama ?? "").trim();
       const nip = String(body.nip ?? "").trim();
+      const email = String(body.email ?? "").trim().toLowerCase();
       const password = String(body.password ?? "");
 
-      if (!id || !nama || !nip) {
+      if (!id || !nama || !nip || !email) {
         return Response.json(
-          { message: "ID, nama, dan NIP wajib diisi" },
+          { message: "ID, nama, NIP, dan email wajib diisi" },
           { status: 400 }
         );
       }
@@ -43,6 +44,13 @@ export default {
       if (!/^\d{8,18}$/.test(nip)) {
         return Response.json(
           { message: "NIP harus berupa 8 sampai 18 digit angka" },
+          { status: 400 }
+        );
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return Response.json(
+          { message: "Format email tidak valid" },
           { status: 400 }
         );
       }
@@ -70,7 +78,10 @@ export default {
         caller.is_active !== true
       ) {
         return Response.json(
-          { message: "Akses ditolak. Hanya Laboran aktif yang dapat mengedit akun guru." },
+          {
+            message:
+              "Akses ditolak. Hanya Laboran aktif yang dapat mengedit akun guru.",
+          },
           { status: 403 }
         );
       }
@@ -78,7 +89,7 @@ export default {
       // Pastikan akun yang akan diedit benar-benar Guru.
       const { data: teacher, error: teacherError } = await admin
         .from("users")
-        .select("id, nama, nip, role")
+        .select("id, nama, nip, email, role")
         .eq("id", id)
         .maybeSingle();
 
@@ -97,49 +108,94 @@ export default {
       }
 
       // Periksa NIP agar tidak digunakan akun lain.
-      const { data: duplicate, error: duplicateError } = await admin
+      const { data: duplicateNip, error: nipError } = await admin
         .from("users")
         .select("id")
         .eq("nip", nip)
         .neq("id", id)
         .maybeSingle();
 
-      if (duplicateError) {
+      if (nipError) {
         return Response.json(
           { message: "Gagal memeriksa NIP" },
           { status: 500 }
         );
       }
 
-      if (duplicate) {
+      if (duplicateNip) {
         return Response.json(
           { message: "NIP sudah digunakan oleh akun lain" },
           { status: 409 }
         );
       }
 
-      // Perbarui profil Guru terlebih dahulu.
-      const { error: updateProfileError } = await admin
+      // Periksa email agar tidak digunakan akun lain.
+      const { data: duplicateEmail, error: emailError } = await admin
         .from("users")
-        .update({ nama, nip })
-        .eq("id", id)
-        .eq("role", "guru");
+        .select("id")
+        .eq("email", email)
+        .neq("id", id)
+        .maybeSingle();
 
-      if (updateProfileError) {
+      if (emailError) {
         return Response.json(
-          { message: "Gagal memperbarui data guru" },
+          { message: "Gagal memeriksa email" },
           { status: 500 }
         );
       }
 
+      if (duplicateEmail) {
+        return Response.json(
+          { message: "Email sudah digunakan oleh akun lain" },
+          { status: 409 }
+        );
+      }
+
+      // Ambil email Auth yang sebenarnya, termasuk untuk akun lama.
+      const { data: authUserData, error: getAuthUserError } =
+        await admin.auth.admin.getUserById(id);
+
+      if (getAuthUserError || !authUserData.user) {
+        console.error("Gagal mengambil akun Auth Guru:", getAuthUserError);
+        return Response.json(
+          { message: "Gagal memeriksa akun autentikasi Guru" },
+          { status: 500 }
+        );
+      }
+
+      const previousAuthEmail = authUserData.user.email;
+
+      if (!previousAuthEmail) {
+        return Response.json(
+          { message: "Akun autentikasi Guru tidak memiliki email" },
+          { status: 500 }
+        );
+      }
+
+      // Simpan perubahan profil terlebih dahulu.
+      const { error: updateProfileError } = await admin
+        .from("users")
+        .update({ nama, nip, email })
+        .eq("id", id)
+        .eq("role", "guru");
+
+      if (updateProfileError) {
+        console.error("Update profil gagal:", updateProfileError);
+        return Response.json(
+          { message: "Gagal memperbarui data profil Guru" },
+          { status: 500 }
+        );
+      }
+
+      // Sinkronkan email dan password pada Supabase Auth.
       const authChanges: {
         email?: string;
         email_confirm?: boolean;
         password?: string;
       } = {};
 
-      if (nip !== teacher.nip) {
-        authChanges.email = `${nip}@silakom.id`;
+      if (email !== previousAuthEmail.toLowerCase()) {
+        authChanges.email = email;
         authChanges.email_confirm = true;
       }
 
@@ -147,44 +203,49 @@ export default {
         authChanges.password = password;
       }
 
-      // Sinkronkan email/password Supabase Auth jika ada perubahan.
       if (Object.keys(authChanges).length > 0) {
         const { error: authError } =
           await admin.auth.admin.updateUserById(id, authChanges);
 
         if (authError) {
-          // Kembalikan profil ke data sebelumnya jika Auth gagal.
+          console.error("Update Auth gagal:", authError);
+
+          // Kembalikan profil jika perubahan Auth gagal.
           const { error: rollbackError } = await admin
             .from("users")
             .update({
               nama: teacher.nama,
               nip: teacher.nip,
+              email: teacher.email,
             })
-            .eq("id", id);
+            .eq("id", id)
+            .eq("role", "guru");
 
           if (rollbackError) {
             console.error("Rollback profil gagal:", rollbackError);
+            return Response.json(
+              {
+                message:
+                  "Update Auth dan rollback profil gagal. Perlu pemeriksaan administrator.",
+              },
+              { status: 500 }
+            );
           }
 
-          console.error("Update Auth gagal:", authError);
-
           return Response.json(
-            {
-              message: rollbackError
-                ? "Gagal memperbarui Auth dan mengembalikan data profil. Perlu pemeriksaan administrator."
-                : "Gagal memperbarui email atau password akun guru. Data profil dikembalikan.",
-            },
+            { message: "Gagal memperbarui email atau password akun Guru." },
             { status: 500 }
           );
         }
       }
 
       return Response.json({
-        message: "Akun guru berhasil diperbarui",
+        message: "Akun Guru berhasil diperbarui",
         data: {
           id,
           nama,
           nip,
+          email,
         },
       });
     } catch (error) {

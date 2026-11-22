@@ -6,27 +6,19 @@ import RowActions from './RowActions';
 
 const COLORS = {
   navy: '#223F91',
-  blue: '#3B82F6',
   paleBlue: '#DCEBFF',
-  background: '#F5F7FB',
   white: '#FFFFFF',
   text: '#1E293B',
   muted: '#64748B',
-  placeholder: '#94A3B8',
   border: '#E2E8F0',
   divider: '#EDF1F7',
-  green: '#059669',
-  paleGreen: '#D1FAE5',
-  red: '#DC2626',
-  paleRed: '#FEE2E2',
 };
-
 
 export type Teacher = {
   id: string;
   nama: string;
   nip: string;
-  password: string;
+  email: string;
 };
 
 type TeacherCardProps = {

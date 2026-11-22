@@ -66,6 +66,7 @@ export default {
       let body: {
         nama?: string;
         nip?: string;
+        email?: string;
         password?: string;
       };
 
@@ -83,6 +84,7 @@ export default {
 
       const nama = body.nama?.trim() ?? "";
       const nip = body.nip?.trim() ?? "";
+      const email = body.email?.trim().toLowerCase() ?? "";
       const password = body.password ?? "";
 
       // Validasi nama.
@@ -102,6 +104,17 @@ export default {
           {
             status: "error",
             message: "NIP harus berupa angka, 8 sampai 18 digit.",
+          },
+          { status: 400 },
+        );
+      }
+
+      // Validasi email Google.
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return Response.json(
+          {
+            status: "error",
+            message: "Email Google tidak valid.",
           },
           { status: 400 },
         );
@@ -148,37 +161,61 @@ export default {
         );
       }
 
-      // Mengubah NIP menjadi email internal untuk Supabase Auth.
-      const email = `${nip}@silakom.id`;
-
-      // Membuat akun Guru melalui Supabase Auth.
+      // Membuat akun Guru menggunakan email Google.
       const { data: authData, error: createError } =
         await ctx.supabaseAdmin.auth.admin.createUser({
           email,
           password,
           email_confirm: true,
-          user_metadata: {
-            nama,
-            nip,
-          },
         });
 
-      if (createError) {
+      if (createError || !authData.user) {
         console.error("Gagal membuat akun Guru:", createError);
 
         return Response.json(
           {
             status: "error",
             message:
-              createError.code === "email_exists"
-                ? "NIP sudah terdaftar."
+              createError?.code === "email_exists"
+                ? "Email sudah terdaftar."
                 : "Gagal membuat akun Guru. Silakan coba kembali.",
           },
           { status: 400 },
         );
       }
 
-      // Profil Guru dibuat otomatis oleh trigger handle_new_user().
+      // Membuat profil Guru secara eksplisit.
+      const { error: profileError } = await ctx.supabaseAdmin
+        .from("users")
+        .insert({
+          id: authData.user.id,
+          nama,
+          nip,
+          email,
+          role: "guru",
+          is_active: true,
+        });
+
+      if (profileError) {
+        console.error("Gagal membuat profil Guru:", profileError);
+
+        // Membersihkan akun Auth jika profil gagal dibuat.
+        const { error: cleanupError } =
+          await ctx.supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+
+        if (cleanupError) {
+          console.error("Gagal membersihkan akun Auth:", cleanupError);
+        }
+
+        return Response.json(
+          {
+            status: "error",
+            message: "Gagal menyimpan profil Guru.",
+          },
+          { status: 500 },
+        );
+      }
+
       return Response.json(
         {
           status: "success",
@@ -187,10 +224,12 @@ export default {
             id: authData.user.id,
             nama,
             nip,
+            email,
           },
         },
         { status: 201 },
       );
+
     } catch (error) {
       console.error("Kesalahan pada fungsi tambah Guru:", error);
 
