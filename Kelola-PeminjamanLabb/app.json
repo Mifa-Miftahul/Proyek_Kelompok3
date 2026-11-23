@@ -18,7 +18,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.silakom.kelompok3"
+      "package": "com.silakom.kelompok3",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "output": "static",

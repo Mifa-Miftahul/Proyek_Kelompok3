@@ -16,21 +16,12 @@ import ActionButton from './ActionButton';
 
 const COLORS = {
   navy: '#223F91',
-  blue: '#3B82F6',
-  paleBlue: '#DCEBFF',
-  background: '#F5F7FB',
   white: '#FFFFFF',
   text: '#1E293B',
   muted: '#64748B',
-  placeholder: '#94A3B8',
   border: '#E2E8F0',
-  divider: '#EDF1F7',
-  green: '#059669',
-  paleGreen: '#D1FAE5',
-  red: '#DC2626',
-  paleRed: '#FEE2E2',
+  background: '#F5F7FB',
 };
-
 
 type FormModalProps = {
   visible: boolean;
@@ -39,12 +30,10 @@ type FormModalProps = {
   submitLabel?: string;
   onClose: () => void;
   onSubmit?: () => void;
-  // Ganti tombol Batal/Simpan bawaan (contoh: tombol Setujui / Tolak)
   footer?: React.ReactNode;
   children: React.ReactNode;
 };
 
-// Wadah form berbentuk bottom sheet (judul + isi + tombol Batal/Simpan).
 export default function FormModal({
   visible,
   title,
@@ -55,7 +44,6 @@ export default function FormModal({
   footer,
   children,
 }: FormModalProps) {
-  // iPad / laptop: form tampil sebagai dialog di tengah, HP: bottom sheet
   const wide = useWindowDimensions().width >= 768;
 
   return (
@@ -64,36 +52,54 @@ export default function FormModal({
       transparent
       animationType={wide ? 'fade' : 'slide'}
       onRequestClose={onClose}
+      statusBarTranslucent
     >
       <KeyboardAvoidingView
         style={[styles.overlay, wide && styles.overlayWide]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable
+          style={styles.backdrop}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Tutup modal"
+        />
 
-        <View style={[styles.sheet, wide && styles.sheetWide]}>
+        <View
+          style={[styles.sheet, wide && styles.sheetWide]}
+        >
           <View style={styles.header}>
             <View style={styles.headerText}>
               <Text style={styles.title}>{title}</Text>
-              {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+
+              {!!subtitle && (
+                <Text style={styles.subtitle}>{subtitle}</Text>
+              )}
             </View>
 
             <Pressable
               onPress={onClose}
-              hitSlop={8}
+              hitSlop={10}
               style={styles.closeButton}
               accessibilityRole="button"
               accessibilityLabel="Tutup form"
             >
-              <Ionicons name="close" size={20} color={COLORS.muted} />
+              <Ionicons
+                name="close"
+                size={20}
+                color={COLORS.muted}
+              />
             </Pressable>
           </View>
 
           <ScrollView
             style={styles.body}
             contentContainerStyle={styles.bodyContent}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
           >
             {children}
           </ScrollView>
@@ -107,6 +113,7 @@ export default function FormModal({
                   onPress={onClose}
                   style={styles.footerButton}
                 />
+
                 <ActionButton
                   label={submitLabel}
                   icon="checkmark"
@@ -133,17 +140,21 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   backdrop: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    zIndex: 0,
   },
   sheet: {
     width: '100%',
     maxWidth: 560,
     maxHeight: '90%',
+    flexShrink: 1,
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     overflow: 'hidden',
+    zIndex: 1,
+    elevation: 8,
   },
   sheetWide: {
     maxHeight: '88%',
@@ -157,9 +168,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 16,
   },
-  headerText: { flex: 1 },
-  title: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
-  subtitle: { color: '#DCE7FF', fontSize: 10, marginTop: 4 },
+  headerText: {
+    flex: 1,
+  },
+  title: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  subtitle: {
+    color: '#DCE7FF',
+    fontSize: 10,
+    marginTop: 4,
+  },
   closeButton: {
     width: 34,
     height: 34,
@@ -168,8 +189,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.white,
   },
-  body: { flexGrow: 0 },
-  bodyContent: { padding: 18, paddingBottom: 6 },
+  body: {
+    flexGrow: 0,
+    flexShrink: 1,
+    minHeight: 0,
+  },
+  bodyContent: {
+    padding: 18,
+    paddingBottom: 12,
+  },
   footer: {
     flexDirection: 'row',
     gap: 10,
@@ -178,5 +206,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
     backgroundColor: COLORS.white,
   },
-  footerButton: { flex: 1 },
+  footerButton: {
+    flex: 1,
+  },
 });
